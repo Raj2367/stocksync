@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # ==================== INFRASTRUCTURE ====================
@@ -31,7 +31,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:29092"]
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "kafka:29092",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -89,7 +95,33 @@ services:
     networks:
       - stocksync-network
 
- 
+  # ==================== APPLICATION SERVICES ====================
+
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: stocksync-order-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGO_URI=mongodb://mongodb:27017/orders
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/order-service:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
 volumes:
   pgdata:
   mongodata:
