@@ -96,6 +96,7 @@ services:
       - stocksync-network
 
   # ==================== APPLICATION SERVICES ====================
+
   order-service:
     build:
       context: ./services/order-service
@@ -165,6 +166,34 @@ services:
         condition: service_healthy
     volumes:
       - ./services/payment-service:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
+  saga-orchestrator:
+    build:
+      context: ./services/saga-orchestrator
+      dockerfile: Dockerfile
+    container_name: stocksync-saga-orchestrator
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    volumes:
+      - ./services/saga-orchestrator:/app
       - /app/node_modules
       - /app/dist
     networks:
