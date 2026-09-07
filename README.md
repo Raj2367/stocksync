@@ -15,13 +15,16 @@ A microservices-based inventory and order management system demonstrating event-
 
 ```bash
 # 1. Start infrastructure
-docker-compose up -d
+docker-compose up -d zookeeper kafka postgres mongodb redis
 
-# 2. Verify Kafka is ready
-docker exec -it stocksync-kafka-1 kafka-topics --bootstrap-server localhost:9092 --list
-
-# 3. Create Kafka topics
+# 2. Create Kafka topics
 ./scripts/create-topics.sh
+
+# 3. Check Postgres
+docker exec -it stocksync-postgres psql -U stocksync -d inventory -c "\dt"
+
+# 4. Build services
+docker-compose up -d --build order-service inventory-service
 ```
 
 ## Tech Stack
