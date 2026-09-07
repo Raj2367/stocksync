@@ -1,14 +1,33 @@
 #!/bin/bash
 set -e
 
-echo "Creating Kafka topics..."
+CONTAINER_NAME="stocksync-kafka" 
+BOOTSTRAP_SERVER="kafka:29092"
+PARTITIONS=3
+REPLICATION_FACTOR=1
 
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic order.created --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic inventory.reserved --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic inventory.reservation-failed --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic payment.processed --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic payment.failed --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic saga.order-completed --partitions 3 --replication-factor 1
-kafka-topics --bootstrap-server localhost:9092 --create --if-not-exists --topic saga.order-cancelled --partitions 3 --replication-factor 1
+echo "Creating Kafka topics inside Docker container '$CONTAINER_NAME'..."
+
+TOPICS=(
+  "order.created"
+  "inventory.reserved"
+  "inventory.reservation-failed"
+  "payment.processed"
+  "payment.failed"
+  "saga.order-completed"
+  "saga.order-cancelled"
+)
+
+for TOPIC in "${TOPICS[@]}"; do
+  docker exec -i "$CONTAINER_NAME" kafka-topics \
+               --bootstrap-server "$BOOTSTRAP_SERVER" \
+               --create \
+               --if-not-exists \
+               --topic "$TOPIC" \
+               --partitions "$PARTITIONS" \
+               --replication-factor "$REPLICATION_FACTOR"
+done
 
 echo "Topics created successfully."
+
+docker exec "$CONTAINER_NAME" kafka-topics --bootstrap-server "$BOOTSTRAP_SERVER" --list
