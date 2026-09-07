@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # ==================== INFRASTRUCTURE ====================
@@ -31,7 +31,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:29092"]
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "kafka:29092",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -89,7 +95,136 @@ services:
     networks:
       - stocksync-network
 
- 
+  # ==================== APPLICATION SERVICES ====================
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: stocksync-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - ORDER_SERVICE_URL=http://order-service:3001
+      - INVENTORY_SERVICE_URL=http://inventory-service:3002
+      - JWT_SECRET=stocksync-dev-secret-change-in-production
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: stocksync-order-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGO_URI=mongodb://mongodb:27017/orders
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/order-service:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+    container_name: stocksync-inventory-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DATABASE_URL=postgresql://stocksync:stocksync@postgres:5432/inventory
+      - KAFKA_BROKER=kafka:29092
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/inventory-service:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: stocksync-payment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/payment-service:/app
+      - /app/node_modules
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
+  saga-orchestrator:
+    build:
+      context: ./services/saga-orchestrator
+      dockerfile: Dockerfile
+    container_name: stocksync-saga-orchestrator
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    volumes:
+      - ./services/saga-orchestrator:/app
+      - /app/node_modules
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
 volumes:
   pgdata:
   mongodata:
