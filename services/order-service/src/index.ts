@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import { connectKafka, disconnectKafka } from "./events/producer";
+import { startConsumer, stopConsumer } from "./events/consumer";
 import healthRouter from "./routes/health";
 import orderRouter from "./routes/orders";
 
@@ -37,6 +38,9 @@ async function startServer() {
     await connectKafka();
     console.log("✅ Connected to Kafka");
 
+    await startConsumer();
+    console.log("✅ Saga consumer started");
+
     app.listen(PORT, () => {
       console.log(`🚀 Order service running on port ${PORT}`);
     });
@@ -49,6 +53,7 @@ async function startServer() {
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully...");
+  await stopConsumer();
   await mongoose.disconnect();
   await disconnectKafka();
   process.exit(0);
