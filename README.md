@@ -14,17 +14,43 @@ A microservices-based inventory and order management system demonstrating event-
 ## Quick Start
 
 ```bash
-# 1. Start infrastructure
-docker-compose up -d zookeeper kafka postgres mongodb redis
+# ==========================================
+# 1. INFRASTRUCTURE & SERVICES SETUP
+# ==========================================
 
-# 2. Create Kafka topics
+# Start all Docker containers in detached mode
+docker-compose up -d
+
+# Create the required Kafka topics
 ./scripts/create-topics.sh
 
-# 3. Check Postgres
+
+# ==========================================
+# 2. SYSTEM DIAGNOSTICS & CHECKS (Optional)
+# ==========================================
+
+# Check PostgreSQL database tables
 docker exec -it stocksync-postgres psql -U stocksync -d inventory -c "\dt"
 
-# 4. Build services
-docker-compose up -d --build order-service inventory-service
+# Test Kafka connection from YOUR local machine (External Listener)
+docker exec stocksync-kafka kafka-broker-api-versions --bootstrap-server localhost:9092
+
+# Test Kafka connection from INSIDE Docker (Internal Listener)
+docker exec stocksync-kafka kafka-broker-api-versions --bootstrap-server kafka:29092
+
+
+# ==========================================
+# 3. LOG MONITORING
+# ==========================================
+
+# Stream live container logs. Replace <SERVICE_NAME> with one of the following:
+# - stocksync-order-service
+# - stocksync-inventory-service
+# - stocksync-payment-service
+# - stocksync-saga-orchestrator
+# - stocksync-api-gateway
+docker logs -f <SERVICE_NAME>
+
 ```
 
 ## Tech Stack

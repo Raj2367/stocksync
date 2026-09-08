@@ -97,6 +97,41 @@ services:
 
   # ==================== APPLICATION SERVICES ====================
 
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: stocksync-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - ORDER_SERVICE_URL=http://order-service:3001
+      - INVENTORY_SERVICE_URL=http://inventory-service:3002
+      - SAGA_SERVICE_URL=http://saga-orchestrator:3004
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=stocksync-dev-secret-change-in-production
+      - KAFKA_BROKER=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      saga-orchestrator:
+        condition: service_started
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - stocksync-network
+    restart: unless-stopped
+
   order-service:
     build:
       context: ./services/order-service
