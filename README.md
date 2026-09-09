@@ -11,6 +11,54 @@ A microservices-based inventory and order management system demonstrating event-
 - **Saga Orchestrator** — Distributed transaction coordinator
 - **Dashboard** — Next.js frontend
 
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Order
+    participant Kafka
+    participant Inventory
+    participant Payment
+    participant Saga
+    participant MongoDB
+    participant PostgreSQL
+
+    Client->>Gateway: POST /orders with JWT
+    Gateway->>Order: Forward request
+    Order->>MongoDB: Save PENDING order
+    Order->>Kafka: order.created
+    Order-->>Gateway: 201 Created
+    Gateway-->>Client: PENDING order
+
+    Kafka->>Inventory: order.created
+    Inventory->>PostgreSQL: BEGIN + SELECT FOR UPDATE
+    Inventory->>PostgreSQL: Reserve stock
+    Inventory->>PostgreSQL: Insert reservation
+    Inventory->>Kafka: inventory.reserved
+
+    Kafka->>Saga: inventory.reserved
+    Saga->>Saga: AWAITING_PAYMENT
+
+    Kafka->>Payment: inventory.reserved
+
+    alt Payment approved
+        Payment->>Kafka: payment.processed
+        Kafka->>Saga: payment.processed
+        Saga->>Kafka: saga.order-completed
+        Kafka->>Order: saga.order-completed
+        Order->>MongoDB: CONFIRMED
+    else Payment declined
+        Payment->>Kafka: payment.failed
+        Kafka->>Saga: payment.failed
+        Saga->>Inventory: POST /inventory/release
+        Inventory->>PostgreSQL: Release reservation
+        Saga->>Kafka: saga.order-cancelled
+        Kafka->>Order: saga.order-cancelled
+        Order->>MongoDB: CANCELLED
+    end
+```
+
 ## Quick Start
 
 ```bash
