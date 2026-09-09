@@ -13,6 +13,14 @@ A microservices-based inventory and order management system demonstrating event-
 
 
 ```mermaid
+---
+config:
+  theme: redux-dark-color
+  look: handDrawn
+  fontFamily: '''Source Code Pro Variable'', monospace'
+  themeVariables:
+    fontFamily: '''Source Code Pro Variable'', monospace'
+---
 sequenceDiagram
     participant Client
     participant Gateway
