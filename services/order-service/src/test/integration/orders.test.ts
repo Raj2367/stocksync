@@ -134,7 +134,7 @@ describe("Order Service Integration Tests", () => {
       const producer = kafka.producer();
       await producer.connect();
       await producer.send({
-        topic: "saga.order-completed",
+        topic: "saga.result",
         messages: [
           {
             key: orderId,
@@ -143,6 +143,9 @@ describe("Order Service Integration Tests", () => {
               paymentId: "PAY-TEST-123",
               timestamp: new Date().toISOString(),
             }),
+            headers: {
+              "event-type": "saga.order-completed",
+            },
           },
         ],
       });
@@ -179,7 +182,7 @@ describe("Order Service Integration Tests", () => {
       const producer = kafka.producer();
       await producer.connect();
       await producer.send({
-        topic: "saga.order-cancelled",
+        topic: "saga.result",
         messages: [
           {
             key: orderId,
@@ -188,6 +191,9 @@ describe("Order Service Integration Tests", () => {
               reason: "Payment failed: INSUFFICIENT_FUNDS",
               timestamp: new Date().toISOString(),
             }),
+            headers: {
+              "event-type": "saga.order-cancelled",
+            },
           },
         ],
       });
