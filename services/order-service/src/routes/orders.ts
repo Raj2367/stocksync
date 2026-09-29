@@ -8,6 +8,13 @@ const router = Router();
 // POST /orders — Create a new order
 router.post("/", async (req, res) => {
   try {
+    const tenantId = req.header("X-Tenant-Id");
+    if (!tenantId) {
+      return res
+        .status(400)
+        .json({ error: "X-Tenant-Id header is required" });
+    }
+
     const { productId, quantity, customerEmail } = req.body;
 
     // Basic validation
@@ -19,6 +26,7 @@ router.post("/", async (req, res) => {
 
     const order = new Order({
       orderId: uuidv4(),
+      tenantId,
       productId,
       quantity,
       customerEmail: customerEmail || null,
@@ -57,7 +65,14 @@ router.post("/", async (req, res) => {
 // GET /orders/:orderId — Get order by ID
 router.get("/:orderId", async (req, res) => {
   try {
-    const order = await Order.findOne({ orderId: req.params.orderId }).lean();
+    const tenantId = req.header("X-Tenant-Id");
+    if (!tenantId) {
+      return res
+        .status(400)
+        .json({ error: "X-Tenant-Id header is required" });
+    }
+
+    const order = await Order.findOne({ orderId: req.params.orderId, tenantId }).lean();
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -71,8 +86,15 @@ router.get("/:orderId", async (req, res) => {
 // GET /orders — List all orders (with limit)
 router.get("/", async (req, res) => {
   try {
+    const tenantId = req.header("X-Tenant-Id");
+    if (!tenantId) {
+      return res
+        .status(400)
+        .json({ error: "X-Tenant-Id header is required" });
+    }
+
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const orders = await Order.find()
+    const orders = await Order.find({ tenantId })
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
