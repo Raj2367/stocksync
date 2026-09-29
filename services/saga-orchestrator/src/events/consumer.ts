@@ -134,12 +134,13 @@ export async function stopConsumer(): Promise<void> {
   }
 }
 
-async function onOrderCreated(event: OrderCreatedEvent): Promise<void> {
-  createSaga(
+export async function onOrderCreated(event: OrderCreatedEvent): Promise<void> {
+  await createSaga(
     event.orderId,
     event.productId,
     event.quantity,
     event.customerEmail,
+    event.tenantId,
   );
   console.log(`🆕 Saga started for order ${event.orderId}`);
 }
@@ -147,18 +148,18 @@ async function onOrderCreated(event: OrderCreatedEvent): Promise<void> {
 export async function onInventoryReserved(
   event: InventoryReservedEvent,
 ): Promise<void> {
-  const saga = getSaga(event.orderId);
+  const saga = await getSaga(event.orderId, event.tenantId);
   if (!saga) {
     console.warn(`No saga found for order ${event.orderId}`);
     return;
   }
-  await handleInventoryReserved(event.orderId);
+  await handleInventoryReserved(event.orderId, event.tenantId);
 }
 
 export async function onInventoryReservationFailed(
   event: InventoryReservationFailedEvent,
 ): Promise<void> {
-  const saga = getSaga(event.orderId);
+  const saga = await getSaga(event.orderId, event.tenantId);
   if (!saga) {
     console.warn(`No saga found for order ${event.orderId}`);
     return;
@@ -172,7 +173,7 @@ export async function onInventoryReservationFailed(
 }
 
 export async function onPaymentProcessed(event: PaymentProcessedEvent): Promise<void> {
-  const saga = getSaga(event.orderId);
+  const saga = await getSaga(event.orderId, event.tenantId);
   if (!saga) {
     console.warn(`No saga found for order ${event.orderId}`);
     return;
@@ -186,7 +187,7 @@ export async function onPaymentProcessed(event: PaymentProcessedEvent): Promise<
 }
 
 export async function onPaymentFailed(event: PaymentFailedEvent): Promise<void> {
-  const saga = getSaga(event.orderId);
+  const saga = await getSaga(event.orderId, event.tenantId);
   if (!saga) {
     console.warn(`No saga found for order ${event.orderId}`);
     return;

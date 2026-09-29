@@ -1,5 +1,6 @@
 import express from "express";
 import { startConsumer, stopConsumer } from "./events/consumer";
+import { connectMongo, disconnectMongo } from "./db/mongo";
 import healthRouter from "./routes/health";
 import sagaRouter from "./routes/sagas";
 
@@ -25,6 +26,7 @@ app.use(
 
 async function startServer() {
   try {
+    await connectMongo();
     await startConsumer();
     console.log("✅ Saga orchestrator consumer started");
 
@@ -40,6 +42,7 @@ async function startServer() {
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully...");
   await stopConsumer();
+  await disconnectMongo();
   process.exit(0);
 });
 

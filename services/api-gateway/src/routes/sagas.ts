@@ -1,14 +1,19 @@
 import { Router } from "express";
+import axios from "axios";
+import { authenticateToken, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 const SAGA_SERVICE_URL =
   process.env.SAGA_SERVICE_URL || "http://saga-orchestrator:3004";
-import axios from "axios";
 
-router.get("/", async (req, res) => {
+// GET /sagas — List sagas for the tenant identified by the verified JWT.
+// The JWT-derived tenantId is always forwarded; a client-supplied
+// X-Tenant-Id header is ignored so it cannot override the JWT value.
+router.get("/", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const response = await axios.get(`${SAGA_SERVICE_URL}/sagas`, {
       timeout: 5000,
+      headers: { "X-Tenant-Id": req.user!.tenantId },
     });
     res.json(response.data);
   } catch (error: any) {
@@ -18,12 +23,16 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:orderId", async (req, res) => {
+// GET /sagas/:orderId — Get specific saga scoped to the verified JWT tenant.
+// The JWT-derived tenantId is always forwarded; a client-supplied
+// X-Tenant-Id header is ignored so it cannot override the JWT value.
+router.get("/:orderId", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const response = await axios.get(
       `${SAGA_SERVICE_URL}/sagas/${req.params.orderId}`,
       {
         timeout: 5000,
+        headers: { "X-Tenant-Id": req.user!.tenantId },
       },
     );
     res.json(response.data);

@@ -10,13 +10,20 @@ const INVENTORY_SERVICE_URL =
 const ORDER_SERVICE_URL =
   process.env.ORDER_SERVICE_URL || "http://order-service:3001";
 
-export async function handleInventoryReserved(orderId: string): Promise<void> {
-  updateSaga(orderId, { status: "AWAITING_PAYMENT" });
-  addSagaStep(orderId, {
-    action: "INVENTORY_RESERVED",
-    status: "success",
-    timestamp: new Date().toISOString(),
-  });
+export async function handleInventoryReserved(
+  orderId: string,
+  tenantId: string,
+): Promise<void> {
+  await updateSaga(orderId, { status: "AWAITING_PAYMENT" }, tenantId);
+  await addSagaStep(
+    orderId,
+    {
+      action: "INVENTORY_RESERVED",
+      status: "success",
+      timestamp: new Date().toISOString(),
+    },
+    tenantId,
+  );
   console.log(`📝 Saga ${orderId}: Inventory reserved, awaiting payment`);
 }
 
@@ -26,16 +33,24 @@ export async function handleInventoryReservationFailed(
   tenantId: string,
   paymentMode: string,
 ): Promise<void> {
-  updateSaga(orderId, {
-    status: "CANCELLED",
-    failureReason: reason,
-  });
-  addSagaStep(orderId, {
-    action: "INVENTORY_RESERVATION_FAILED",
-    status: "failure",
-    timestamp: new Date().toISOString(),
-    details: reason,
-  });
+  await updateSaga(
+    orderId,
+    {
+      status: "CANCELLED",
+      failureReason: reason,
+    },
+    tenantId,
+  );
+  await addSagaStep(
+    orderId,
+    {
+      action: "INVENTORY_RESERVATION_FAILED",
+      status: "failure",
+      timestamp: new Date().toISOString(),
+      details: reason,
+    },
+    tenantId,
+  );
 
   // Publish cancellation
   await publishOrderCancelled({
@@ -57,16 +72,24 @@ export async function handlePaymentProcessed(
   tenantId: string,
   paymentMode: string,
 ): Promise<void> {
-  updateSaga(orderId, {
-    status: "COMPLETED",
-    paymentId,
-  });
-  addSagaStep(orderId, {
-    action: "PAYMENT_PROCESSED",
-    status: "success",
-    timestamp: new Date().toISOString(),
-    details: `Payment ID: ${paymentId}`,
-  });
+  await updateSaga(
+    orderId,
+    {
+      status: "COMPLETED",
+      paymentId,
+    },
+    tenantId,
+  );
+  await addSagaStep(
+    orderId,
+    {
+      action: "PAYMENT_PROCESSED",
+      status: "success",
+      timestamp: new Date().toISOString(),
+      details: `Payment ID: ${paymentId}`,
+    },
+    tenantId,
+  );
 
   // Publish completion
   await publishOrderCompleted({
@@ -88,16 +111,24 @@ export async function handlePaymentFailed(
   tenantId: string,
   paymentMode: string,
 ): Promise<void> {
-  updateSaga(orderId, {
-    status: "CANCELLING",
-    failureReason: reason,
-  });
-  addSagaStep(orderId, {
-    action: "PAYMENT_FAILED",
-    status: "failure",
-    timestamp: new Date().toISOString(),
-    details: reason,
-  });
+  await updateSaga(
+    orderId,
+    {
+      status: "CANCELLING",
+      failureReason: reason,
+    },
+    tenantId,
+  );
+  await addSagaStep(
+    orderId,
+    {
+      action: "PAYMENT_FAILED",
+      status: "failure",
+      timestamp: new Date().toISOString(),
+      details: reason,
+    },
+    tenantId,
+  );
 
   console.log(
     `📝 Saga ${orderId}: Payment failed (${reason}), starting compensation...`,
@@ -111,19 +142,27 @@ export async function handlePaymentFailed(
       quantity,
     });
 
-    addSagaStep(orderId, {
-      action: "RELEASE_INVENTORY",
-      status: "success",
-      timestamp: new Date().toISOString(),
-    });
+    await addSagaStep(
+      orderId,
+      {
+        action: "RELEASE_INVENTORY",
+        status: "success",
+        timestamp: new Date().toISOString(),
+      },
+      tenantId,
+    );
     console.log(`♻️ Saga ${orderId}: Inventory released successfully`);
   } catch (error: any) {
-    addSagaStep(orderId, {
-      action: "RELEASE_INVENTORY",
-      status: "failure",
-      timestamp: new Date().toISOString(),
-      details: error.message,
-    });
+    await addSagaStep(
+      orderId,
+      {
+        action: "RELEASE_INVENTORY",
+        status: "failure",
+        timestamp: new Date().toISOString(),
+        details: error.message,
+      },
+      tenantId,
+    );
     console.error(
       `💥 Saga ${orderId}: Failed to release inventory!`,
       error.message,
@@ -132,7 +171,7 @@ export async function handlePaymentFailed(
   }
 
   // Step 2: Mark order as cancelled
-  updateSaga(orderId, { status: "CANCELLED" });
+  await updateSaga(orderId, { status: "CANCELLED" }, tenantId);
 
   await publishOrderCancelled({
     orderId,

@@ -224,7 +224,10 @@ services:
       - NODE_ENV=development
       - PORT=3004
       - KAFKA_BROKER=kafka:29092
+      - MONGO_URI=mongodb://mongodb:27017/sagas
     depends_on:
+      mongodb:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       order-service:
