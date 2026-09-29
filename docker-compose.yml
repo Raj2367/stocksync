@@ -106,13 +106,13 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - PORT=${PORT:-3000}
+      - PORT=${API_GATEWAY_PORT:-3000}
       - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://order-service:3001}
       - INVENTORY_SERVICE_URL=${INVENTORY_SERVICE_URL:-http://inventory-service:3002}
       - SAGA_SERVICE_URL=${SAGA_SERVICE_URL:-http://saga-orchestrator:3004}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/auth}
-      - JWT_SECRET=${JWT_SECRET:-stocksync-dev-secret-change-in-production}
+      - MONGO_URI=${API_GATEWAY_MONGO_URI:-mongodb://mongodb:27017/auth}
+      - JWT_SECRET=${API_GATEWAY_JWT_SECRET:-stocksync-dev-secret-change-in-production}
       - KAFKA_BROKER=kafka:29092
       - SEED_ACME_ADMIN_PASSWORD=${SEED_ACME_ADMIN_PASSWORD}
       - SEED_ACME_USER_PASSWORD=${SEED_ACME_USER_PASSWORD}
@@ -147,8 +147,8 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - PORT=${PORT:-3001}
-      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/orders}
+      - PORT=${ORDER_SERVICE_PORT:-3001}
+      - MONGO_URI=${ORDER_MONGO_URI:-mongodb://mongodb:27017/orders}
       - KAFKA_BROKER=${KAFKA_BROKER:-kafka:29092}
     depends_on:
       mongodb:
@@ -172,7 +172,7 @@ services:
       - "3002:3002"
     environment:
       - NODE_ENV=development
-      - PORT=${PORT:-3002}
+      - PORT=${INVENTORY_SERVICE_PORT:-3002}
       - DATABASE_URL=${DATABASE_URL:-postgresql://stocksync:stocksync@postgres:5432/inventory}
       - KAFKA_BROKER=${KAFKA_BROKER:-kafka:29092}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
@@ -200,7 +200,7 @@ services:
       - "3003:3003"
     environment:
       - NODE_ENV=development
-      - PORT=${PORT:-3003}
+      - PORT=${PAYMENT_SERVICE_PORT:-3003}
       - KAFKA_BROKER=${KAFKA_BROKER:-kafka:29092}
       - DEMO_MODE=${DEMO_MODE:-false}
     depends_on:
@@ -223,8 +223,8 @@ services:
       - "3004:3004"
     environment:
       - NODE_ENV=development
-      - PORT=${PORT:-3004}
-      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/sagas}
+      - PORT=${SAGA_SERVICE_PORT:-3004}
+      - MONGO_URI=${SAGA_MONGO_URI:-mongodb://mongodb:27017/sagas}
       - KAFKA_BROKER=${KAFKA_BROKER:-kafka:29092}
       - INVENTORY_SERVICE_URL=${INVENTORY_SERVICE_URL:-http://inventory-service:3002}
       - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://order-service:3001}
