@@ -1,4 +1,4 @@
-import { Kafka, Consumer } from "kafkajs";
+import { Kafka, Consumer, Message } from "kafkajs";
 import { createSaga, getSaga, updateSaga, addSagaStep } from "../saga/store";
 import {
   handleInventoryReserved,
@@ -77,54 +77,82 @@ export async function startConsumer(): Promise<void> {
   await consumer.connect();
   console.log("✅ Saga orchestrator connected to Kafka");
 
-  // Subscribe to all relevant topics
+  // Subscribe to all relevant topics. Inventory and payment outcomes
+  // now arrive on consolidated topics; the specific event-type header
+  // is used inside eachMessage to dispatch to the correct handler.
   await consumer.subscribe({ topic: "order.created", fromBeginning: false });
-  await consumer.subscribe({
-    topic: "inventory.reserved",
-    fromBeginning: false,
-  });
-  await consumer.subscribe({
-    topic: "inventory.reservation-failed",
-    fromBeginning: false,
-  });
-  await consumer.subscribe({
-    topic: "payment.processed",
-    fromBeginning: false,
-  });
-  await consumer.subscribe({ topic: "payment.failed", fromBeginning: false });
+  await consumer.subscribe({ topic: "inventory.result", fromBeginning: false });
+  await consumer.subscribe({ topic: "payment.result", fromBeginning: false });
 
   console.log("📡 Subscribed to saga topics");
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        const event = JSON.parse(message.value!.toString());
-        console.log(`\n📥 [${topic}] ${event.orderId}`);
-
-        switch (topic) {
-          case "order.created":
-            await onOrderCreated(event as OrderCreatedEvent);
-            break;
-          case "inventory.reserved":
-            await onInventoryReserved(event as InventoryReservedEvent);
-            break;
-          case "inventory.reservation-failed":
-            await onInventoryReservationFailed(
-              event as InventoryReservationFailedEvent,
-            );
-            break;
-          case "payment.processed":
-            await onPaymentProcessed(event as PaymentProcessedEvent);
-            break;
-          case "payment.failed":
-            await onPaymentFailed(event as PaymentFailedEvent);
-            break;
-        }
+        await dispatchSagaEvent(topic, message);
       } catch (error) {
         console.error(`Error processing ${topic}:`, error);
       }
     },
   });
+}
+
+// Routes a single Kafka message to the appropriate saga handler. Extracted
+// from eachMessage so the header-based routing can be unit tested without
+// a live Kafka broker.
+export async function dispatchSagaEvent(
+  topic: string,
+  message: Message,
+): Promise<void> {
+  const event = JSON.parse(message.value!.toString());
+  console.log(`\n📥 [${topic}] ${event.orderId}`);
+
+  // order.created keeps its original, topic-based routing (unchanged).
+  if (topic === "order.created") {
+    await onOrderCreated(event as OrderCreatedEvent);
+    return;
+  }
+
+  // For the consolidated inventory.result / payment.result topics, route by
+  // the KafkaJS "event-type" header so a single topic can carry both
+  // outcome kinds. Unknown/missing event-types are skipped.
+  const eventType = message.headers?.["event-type"]?.toString();
+
+  if (topic === "inventory.result") {
+    switch (eventType) {
+      case "inventory.reserved":
+        await onInventoryReserved(event as InventoryReservedEvent);
+        break;
+      case "inventory.reservation-failed":
+        await onInventoryReservationFailed(
+          event as InventoryReservationFailedEvent,
+        );
+        break;
+      default:
+        console.log(
+          `⏭️ Skipping inventory.result event (event-type: ${eventType})`,
+        );
+    }
+    return;
+  }
+
+  if (topic === "payment.result") {
+    switch (eventType) {
+      case "payment.processed":
+        await onPaymentProcessed(event as PaymentProcessedEvent);
+        break;
+      case "payment.failed":
+        await onPaymentFailed(event as PaymentFailedEvent);
+        break;
+      default:
+        console.log(
+          `⏭️ Skipping payment.result event (event-type: ${eventType})`,
+        );
+    }
+    return;
+  }
+
+  console.log(`⏭️ Skipping unhandled topic: ${topic}`);
 }
 
 export async function stopConsumer(): Promise<void> {
