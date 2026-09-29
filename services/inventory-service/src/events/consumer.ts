@@ -20,9 +20,11 @@ let consumer: Consumer;
 
 interface OrderCreatedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
   customerEmail: string | null;
+  paymentMode: string;
   timestamp: string;
 }
 
@@ -57,7 +59,7 @@ export async function stopConsumer(): Promise<void> {
   }
 }
 
-async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
+export async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
   const client = await getClient();
 
   try {
@@ -74,8 +76,10 @@ async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
       console.log(`❌ Product not found: ${event.productId}`);
       await publishInventoryReservationFailed({
         orderId: event.orderId,
+        tenantId: event.tenantId,
         productId: event.productId,
         quantity: event.quantity,
+        paymentMode: event.paymentMode,
         reason: "PRODUCT_NOT_FOUND",
         timestamp: new Date().toISOString(),
       });
@@ -92,8 +96,10 @@ async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
       );
       await publishInventoryReservationFailed({
         orderId: event.orderId,
+        tenantId: event.tenantId,
         productId: event.productId,
         quantity: event.quantity,
+        paymentMode: event.paymentMode,
         reason: "INSUFFICIENT_STOCK",
         timestamp: new Date().toISOString(),
       });
@@ -121,8 +127,10 @@ async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
     // Publish success event
     await publishInventoryReserved({
       orderId: event.orderId,
+      tenantId: event.tenantId,
       productId: event.productId,
       quantity: event.quantity,
+      paymentMode: event.paymentMode,
       reservationId: product.id,
       timestamp: new Date().toISOString(),
     });

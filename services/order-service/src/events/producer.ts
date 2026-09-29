@@ -28,9 +28,11 @@ export async function disconnectKafka(): Promise<void> {
 
 export interface OrderCreatedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
   customerEmail: string | null;
+  paymentMode: string;
   timestamp: string;
 }
 

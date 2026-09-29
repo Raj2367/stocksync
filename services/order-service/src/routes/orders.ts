@@ -15,7 +15,7 @@ router.post("/", async (req, res) => {
         .json({ error: "X-Tenant-Id header is required" });
     }
 
-    const { productId, quantity, customerEmail } = req.body;
+    const { productId, quantity, customerEmail, paymentMode } = req.body;
 
     // Basic validation
     if (!productId || !quantity || quantity < 1) {
@@ -30,6 +30,7 @@ router.post("/", async (req, res) => {
       productId,
       quantity,
       customerEmail: customerEmail || null,
+      paymentMode: paymentMode || "UNPAID",
       status: "PENDING",
       sagaStatus: "AWAITING_INVENTORY",
     });
@@ -39,9 +40,11 @@ router.post("/", async (req, res) => {
     // Publish event to Kafka
     await publishOrderCreated({
       orderId: order.orderId,
+      tenantId: order.tenantId,
       productId: order.productId,
       quantity: order.quantity,
       customerEmail: order.customerEmail,
+      paymentMode: order.paymentMode,
       timestamp: new Date().toISOString(),
     });
 

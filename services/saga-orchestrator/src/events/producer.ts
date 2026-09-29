@@ -27,12 +27,16 @@ export async function disconnectProducer(): Promise<void> {
 
 export interface SagaOrderCompletedEvent {
   orderId: string;
+  tenantId: string;
+  paymentMode: string;
   paymentId: string;
   timestamp: string;
 }
 
 export interface SagaOrderCancelledEvent {
   orderId: string;
+  tenantId: string;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }

@@ -22,32 +22,40 @@ let consumer: Consumer;
 
 interface OrderCreatedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
   customerEmail: string | null;
+  paymentMode: string;
   timestamp: string;
 }
 
 interface InventoryReservedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reservationId: number;
   timestamp: string;
 }
 
 interface InventoryReservationFailedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }
 
 interface PaymentProcessedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   paymentId: string;
   amount: number;
   timestamp: string;
@@ -55,8 +63,10 @@ interface PaymentProcessedEvent {
 
 interface PaymentFailedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }
@@ -134,7 +144,7 @@ async function onOrderCreated(event: OrderCreatedEvent): Promise<void> {
   console.log(`🆕 Saga started for order ${event.orderId}`);
 }
 
-async function onInventoryReserved(
+export async function onInventoryReserved(
   event: InventoryReservedEvent,
 ): Promise<void> {
   const saga = getSaga(event.orderId);
@@ -145,7 +155,7 @@ async function onInventoryReserved(
   await handleInventoryReserved(event.orderId);
 }
 
-async function onInventoryReservationFailed(
+export async function onInventoryReservationFailed(
   event: InventoryReservationFailedEvent,
 ): Promise<void> {
   const saga = getSaga(event.orderId);
@@ -153,19 +163,29 @@ async function onInventoryReservationFailed(
     console.warn(`No saga found for order ${event.orderId}`);
     return;
   }
-  await handleInventoryReservationFailed(event.orderId, event.reason);
+  await handleInventoryReservationFailed(
+    event.orderId,
+    event.reason,
+    event.tenantId,
+    event.paymentMode,
+  );
 }
 
-async function onPaymentProcessed(event: PaymentProcessedEvent): Promise<void> {
+export async function onPaymentProcessed(event: PaymentProcessedEvent): Promise<void> {
   const saga = getSaga(event.orderId);
   if (!saga) {
     console.warn(`No saga found for order ${event.orderId}`);
     return;
   }
-  await handlePaymentProcessed(event.orderId, event.paymentId);
+  await handlePaymentProcessed(
+    event.orderId,
+    event.paymentId,
+    event.tenantId,
+    event.paymentMode,
+  );
 }
 
-async function onPaymentFailed(event: PaymentFailedEvent): Promise<void> {
+export async function onPaymentFailed(event: PaymentFailedEvent): Promise<void> {
   const saga = getSaga(event.orderId);
   if (!saga) {
     console.warn(`No saga found for order ${event.orderId}`);
@@ -176,5 +196,7 @@ async function onPaymentFailed(event: PaymentFailedEvent): Promise<void> {
     event.productId,
     event.quantity,
     event.reason,
+    event.tenantId,
+    event.paymentMode,
   );
 }

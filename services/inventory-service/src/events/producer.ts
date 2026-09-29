@@ -27,16 +27,20 @@ export async function disconnectProducer(): Promise<void> {
 
 export interface InventoryReservedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reservationId: number;
   timestamp: string;
 }
 
 export interface InventoryReservationFailedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }

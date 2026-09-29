@@ -16,8 +16,10 @@ let consumer: Consumer;
 
 interface InventoryReservedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reservationId: number;
   timestamp: string;
 }
@@ -57,7 +59,7 @@ export async function stopConsumer(): Promise<void> {
   }
 }
 
-async function handlePayment(event: InventoryReservedEvent): Promise<void> {
+export async function handlePayment(event: InventoryReservedEvent): Promise<void> {
   // Simulate payment processing delay (100-500ms)
   const delay = Math.floor(Math.random() * 400) + 100;
   await sleep(delay);
@@ -74,8 +76,10 @@ async function handlePayment(event: InventoryReservedEvent): Promise<void> {
 
     await publishPaymentProcessed({
       orderId: event.orderId,
+      tenantId: event.tenantId,
       productId: event.productId,
       quantity: event.quantity,
+      paymentMode: event.paymentMode,
       paymentId: paymentId,
       amount: calculateAmount(event.productId, event.quantity),
       timestamp: new Date().toISOString(),
@@ -89,8 +93,10 @@ async function handlePayment(event: InventoryReservedEvent): Promise<void> {
 
     await publishPaymentFailed({
       orderId: event.orderId,
+      tenantId: event.tenantId,
       productId: event.productId,
       quantity: event.quantity,
+      paymentMode: event.paymentMode,
       reason: failureReason,
       timestamp: new Date().toISOString(),
     });

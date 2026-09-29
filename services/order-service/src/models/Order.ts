@@ -13,6 +13,7 @@ export interface IOrder extends Document {
     | "COMPLETED"
     | "CANCELLED";
   paymentId?: string;
+  paymentMode: string;
   failureReason?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -41,6 +42,7 @@ const OrderSchema = new Schema<IOrder>(
       default: "AWAITING_INVENTORY",
     },
     paymentId: { type: String, default: null },
+    paymentMode: { type: String, default: "UNPAID" },
     failureReason: { type: String, default: null },
   },
   { timestamps: true },

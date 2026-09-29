@@ -27,8 +27,10 @@ export async function disconnectProducer(): Promise<void> {
 
 export interface PaymentProcessedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   paymentId: string;
   amount: number;
   timestamp: string;
@@ -36,8 +38,10 @@ export interface PaymentProcessedEvent {
 
 export interface PaymentFailedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }

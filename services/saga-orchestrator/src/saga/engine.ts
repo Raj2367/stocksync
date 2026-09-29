@@ -23,6 +23,8 @@ export async function handleInventoryReserved(orderId: string): Promise<void> {
 export async function handleInventoryReservationFailed(
   orderId: string,
   reason: string,
+  tenantId: string,
+  paymentMode: string,
 ): Promise<void> {
   updateSaga(orderId, {
     status: "CANCELLED",
@@ -38,6 +40,8 @@ export async function handleInventoryReservationFailed(
   // Publish cancellation
   await publishOrderCancelled({
     orderId,
+    tenantId,
+    paymentMode,
     reason: `Inventory reservation failed: ${reason}`,
     timestamp: new Date().toISOString(),
   });
@@ -50,6 +54,8 @@ export async function handleInventoryReservationFailed(
 export async function handlePaymentProcessed(
   orderId: string,
   paymentId: string,
+  tenantId: string,
+  paymentMode: string,
 ): Promise<void> {
   updateSaga(orderId, {
     status: "COMPLETED",
@@ -65,6 +71,8 @@ export async function handlePaymentProcessed(
   // Publish completion
   await publishOrderCompleted({
     orderId,
+    tenantId,
+    paymentMode,
     paymentId,
     timestamp: new Date().toISOString(),
   });
@@ -77,6 +85,8 @@ export async function handlePaymentFailed(
   productId: string,
   quantity: number,
   reason: string,
+  tenantId: string,
+  paymentMode: string,
 ): Promise<void> {
   updateSaga(orderId, {
     status: "CANCELLING",
@@ -126,6 +136,8 @@ export async function handlePaymentFailed(
 
   await publishOrderCancelled({
     orderId,
+    tenantId,
+    paymentMode,
     reason: `Payment failed: ${reason}`,
     timestamp: new Date().toISOString(),
   });
