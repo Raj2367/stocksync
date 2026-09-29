@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { connectRedis, disconnectRedis } from "./db/redis";
+import { connectMongo, disconnectMongo } from "./db/mongo";
+import { seedUsers } from "./db/seed";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { authRouter } from "./routes/auth";
 import healthRouter from "./routes/health";
@@ -39,6 +41,11 @@ app.use(
 
 async function startServer() {
   try {
+    await connectMongo();
+    console.log("✅ MongoDB connected");
+
+    await seedUsers();
+
     await connectRedis();
     console.log("✅ Redis connected");
 
@@ -61,6 +68,7 @@ async function startServer() {
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully...");
   await disconnectRedis();
+  await disconnectMongo();
   process.exit(0);
 });
 

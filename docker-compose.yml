@@ -111,9 +111,16 @@ services:
       - INVENTORY_SERVICE_URL=http://inventory-service:3002
       - SAGA_SERVICE_URL=http://saga-orchestrator:3004
       - REDIS_URL=redis://redis:6379
+      - MONGO_URI=mongodb://mongodb:27017/auth
       - JWT_SECRET=stocksync-dev-secret-change-in-production
       - KAFKA_BROKER=kafka:29092
+      - SEED_ACME_ADMIN_PASSWORD=${SEED_ACME_ADMIN_PASSWORD}
+      - SEED_ACME_USER_PASSWORD=${SEED_ACME_USER_PASSWORD}
+      - SEED_BETA_ADMIN_PASSWORD=${SEED_BETA_ADMIN_PASSWORD}
+      - SEED_BETA_USER_PASSWORD=${SEED_BETA_USER_PASSWORD}
     depends_on:
+      mongodb:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       redis:
@@ -127,7 +134,6 @@ services:
     volumes:
       - ./services/api-gateway:/app
       - /app/node_modules
-      - /app/dist
     networks:
       - stocksync-network
     restart: unless-stopped

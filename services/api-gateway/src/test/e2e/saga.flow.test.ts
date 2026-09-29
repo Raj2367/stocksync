@@ -8,24 +8,11 @@ describe("End-to-End Saga Flow", () => {
   const TEST_EMAIL = `e2e-${Date.now()}@example.com`;
 
   beforeAll(async () => {
-    // 1. Register new test user
-    try {
-      await axios.post(`${GATEWAY_URL}/auth/register`, {
-        email: TEST_EMAIL,
-        password: "testpass123",
-      });
-    } catch (e: any) {
-      if (e.response?.status !== 409) {
-        console.error("Register Error:", e.response?.status, e.response?.data);
-        throw e;
-      }
-    }
-
-    // 2. Login to retrieve auth token
+    // 1. Login with seeded Acme user (registration was removed in 0A.2)
     try {
       const loginRes = await axios.post(`${GATEWAY_URL}/auth/login`, {
-        email: TEST_EMAIL,
-        password: "testpass123",
+        email: "user@acme.stocksync",
+        password: process.env.SEED_ACME_USER_PASSWORD,
       });
       authToken = loginRes.data.token;
     } catch (e: any) {
