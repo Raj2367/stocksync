@@ -13,6 +13,11 @@ const kafka = new Kafka({
 
 let producer: Producer;
 
+// Consolidated topic for all inventory outcome events. Both
+// inventory.reserved and inventory.reservation-failed flows now publish
+// here, distinguished by the preserved "event-type" header.
+const INVENTORY_RESULT_TOPIC = "inventory.result";
+
 export async function connectProducer(): Promise<void> {
   producer = kafka.producer();
   await producer.connect();
@@ -53,7 +58,7 @@ export async function publishInventoryReserved(
   }
 
   await producer.send({
-    topic: "inventory.reserved",
+    topic: INVENTORY_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
@@ -77,7 +82,7 @@ export async function publishInventoryReservationFailed(
   }
 
   await producer.send({
-    topic: "inventory.reservation-failed",
+    topic: INVENTORY_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,

@@ -13,6 +13,11 @@ const kafka = new Kafka({
 
 let producer: Producer;
 
+// Consolidated topic for all payment outcome events. Both
+// payment.processed and payment.failed flows now publish here,
+// distinguished by the preserved "event-type" header.
+const PAYMENT_RESULT_TOPIC = "payment.result";
+
 export async function connectProducer(): Promise<void> {
   producer = kafka.producer();
   await producer.connect();
@@ -54,7 +59,7 @@ export async function publishPaymentProcessed(
   }
 
   await producer.send({
-    topic: "payment.processed",
+    topic: PAYMENT_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
@@ -78,7 +83,7 @@ export async function publishPaymentFailed(
   }
 
   await producer.send({
-    topic: "payment.failed",
+    topic: PAYMENT_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,

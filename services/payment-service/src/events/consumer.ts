@@ -1,4 +1,4 @@
-import { Kafka, Consumer } from "kafkajs";
+import { Kafka, Consumer, Message } from "kafkajs";
 import { publishPaymentProcessed, publishPaymentFailed } from "./producer";
 import { DEMO_MODE } from "../config";
 
@@ -32,20 +32,15 @@ export async function startConsumer(): Promise<void> {
   console.log("✅ Payment consumer connected");
 
   await consumer.subscribe({
-    topic: "inventory.reserved",
+    topic: "inventory.result",
     fromBeginning: false,
   });
-  console.log("📡 Subscribed to inventory.reserved");
+  console.log("📡 Subscribed to inventory.result");
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        const event: InventoryReservedEvent = JSON.parse(
-          message.value!.toString(),
-        );
-        console.log(`📥 Received inventory.reserved: ${event.orderId}`);
-
-        await handlePayment(event);
+        await processInventoryMessage(message);
       } catch (error) {
         console.error("Error processing payment:", error);
       }
@@ -58,6 +53,27 @@ export async function stopConsumer(): Promise<void> {
     await consumer.disconnect();
     console.log("🔌 Payment consumer disconnected");
   }
+}
+
+// Dispatches a single inventory.result message. Only the
+// "inventory.reserved" event-type triggers payment handling; other
+// events arriving on the same topic (e.g. inventory.reservation-failed)
+// are skipped without touching payment logic.
+export async function processInventoryMessage(
+  message: Message,
+): Promise<void> {
+  const eventType = message.headers?.["event-type"]?.toString();
+  if (eventType !== "inventory.reserved") {
+    console.log(`⏭️ Skipping inventory.result event (event-type: ${eventType})`);
+    return;
+  }
+
+  const event: InventoryReservedEvent = JSON.parse(
+    message.value!.toString(),
+  );
+  console.log(`📥 Received inventory.reserved: ${event.orderId}`);
+
+  await handlePayment(event);
 }
 
 export async function handlePayment(event: InventoryReservedEvent): Promise<void> {
