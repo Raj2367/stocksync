@@ -3,19 +3,16 @@ set -e
 
 CONTAINER_NAME="stocksync-kafka" 
 BOOTSTRAP_SERVER="kafka:29092"
-PARTITIONS=3
+PARTITIONS=2
 REPLICATION_FACTOR=1
 
 echo "Creating Kafka topics inside Docker container '$CONTAINER_NAME'..."
 
 TOPICS=(
   "order.created"
-  "inventory.reserved"
-  "inventory.reservation-failed"
-  "payment.processed"
-  "payment.failed"
-  "saga.order-completed"
-  "saga.order-cancelled"
+  "inventory.result"
+  "payment.result"
+  "saga.result"
 )
 
 for TOPIC in "${TOPICS[@]}"; do
