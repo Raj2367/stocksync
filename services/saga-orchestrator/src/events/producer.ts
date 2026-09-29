@@ -13,6 +13,11 @@ const kafka = new Kafka({
 
 let producer: Producer;
 
+// Consolidated topic for all saga outcome events. Both
+// saga.order-completed and saga.order-cancelled flows now publish here,
+// distinguished by the preserved "event-type" header.
+const SAGA_RESULT_TOPIC = "saga.result";
+
 export async function connectProducer(): Promise<void> {
   producer = kafka.producer();
   await producer.connect();
@@ -47,7 +52,7 @@ export async function publishOrderCompleted(
   if (!producer) await connectProducer();
 
   await producer.send({
-    topic: "saga.order-completed",
+    topic: SAGA_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
@@ -69,7 +74,7 @@ export async function publishOrderCancelled(
   if (!producer) await connectProducer();
 
   await producer.send({
-    topic: "saga.order-cancelled",
+    topic: SAGA_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
