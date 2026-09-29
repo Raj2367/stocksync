@@ -1,0 +1,51 @@
+flowchart LR
+    B[Browser / Minimal Frontend] --> E[Public TLS Edge / Reverse Proxy]
+    E --> G[API Gateway\nJWT Auth + Tenant Context]
+
+    O[Order Service\nTenant-scoped Orders]
+    S[Saga Orchestrator\nPersistent Tenant-scoped Sagas]
+    I[Inventory Service\nShared Catalog + Inventory]
+    P[Payment Service\nDemo-controlled]
+
+    M[(MongoDB)]
+    PG[(PostgreSQL)]
+    V[(RAG Knowledge Store)]
+    R[(Redis)]
+    K[(Kafka)]
+
+    C[Copilot / RAG Module\ninside API Gateway]
+    L[Free-tier LLM API]
+
+    G --> O
+    G --> S
+    G --> C
+
+    O --> M
+    S --> M
+    I --> PG
+    I --> R
+
+    O <--> K
+    I <--> K
+    P <--> K
+    S <--> K
+    S -->|HTTP compensation /release| I
+
+    C -->|live facts| O
+    C -->|live facts| S
+    C -->|tenant-filtered retrieval before prompt| V
+    C --> L
+    C -->|stricter per-tenant rate limit| R
+
+    G -. "JWT -> tenantId -> trusted X-Tenant-Id" .-> O
+    G -. "JWT -> tenantId -> trusted X-Tenant-Id" .-> S
+
+    classDef public fill:#eef,stroke:#446;
+    classDef core fill:#efe,stroke:#484;
+    classDef data fill:#ffe,stroke:#884;
+    classDef ai fill:#fce,stroke:#848;
+
+    class B,E public;
+    class G,O,S,I,P core;
+    class M,PG,R,K data;
+    class C,L,V ai;
