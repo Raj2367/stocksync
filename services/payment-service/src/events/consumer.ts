@@ -1,5 +1,6 @@
 import { Kafka, Consumer } from "kafkajs";
 import { publishPaymentProcessed, publishPaymentFailed } from "./producer";
+import { DEMO_MODE } from "../config";
 
 const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
 
@@ -64,8 +65,13 @@ export async function handlePayment(event: InventoryReservedEvent): Promise<void
   const delay = Math.floor(Math.random() * 400) + 100;
   await sleep(delay);
 
-  // Random approval: ~70% success rate
-  const isApproved = Math.random() < 0.7;
+  // DEMO_MODE uses a deterministic decision based on paymentMode:
+  // PREPAID orders are always approved (funds already collected), any other
+  // mode (e.g. UNPAID) is declined (no funds captured). Outside DEMO_MODE
+  // the original randomized ~70% success rate is preserved exactly.
+  const isApproved = DEMO_MODE
+    ? event.paymentMode === "PREPAID"
+    : Math.random() < 0.7;
 
   if (isApproved) {
     const paymentId = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;

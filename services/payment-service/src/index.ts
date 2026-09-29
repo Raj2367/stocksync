@@ -1,6 +1,7 @@
 import express from "express";
 import { startConsumer, stopConsumer } from "./events/consumer";
 import healthRouter from "./routes/health";
+import { DEMO_MODE } from "./config";
 
 const app = express();
 app.use(express.json());
@@ -32,6 +33,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`🚀 Payment service running on port ${PORT}`);
       console.log(`💳 Payment approval rate: ~70% (randomized for testing)`);
+      console.log(`🐪 DEMO_MODE: ${DEMO_MODE ? "enabled" : "disabled"}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
