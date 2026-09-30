@@ -324,7 +324,7 @@ However, this file has documented drift that must be reconciled before first dep
 
 ### Proven locally
 
-The following were observed during the local bundled-container test. These are runtime observations, not repository-source facts:
+The following were observed during local runtime validation. These are runtime observations, not repository-source facts:
 
 - Bundled image builds successfully.
 - All five services start in one container.
@@ -336,30 +336,31 @@ The following were observed during the local bundled-container test. These are r
 - Redis connectivity works.
 - MongoDB connectivity works.
 - Kafka connectivity was observed: producers/consumers connected and consumer groups joined.
+- Complete business-level `order-created → inventory → payment → saga` flow was verified locally through both the Compose stack and the bundled single-container image, including payment failure and inventory compensation.
+- Saga persistence was verified across a `saga-orchestrator` service restart in Compose and a full bundled-container restart.
+- Tenant isolation was verified for both orders and sagas in both local topologies: a Beta JWT received `404` when requesting Acme records.
 - Gateway `/health` returned HTTP 200.
 - Gateway `/inventory` returned HTTP 200 with real inventory rows.
 - Graceful SIGTERM shutdown succeeded; all five services stopped cleanly.
 
-> Runtime validation results above were observed during the local bundled-container test; they do not require repository-source citations.
+> Runtime validation results above were observed during local runtime validation; they do not require repository-source citations.
 
 ### Not yet proven locally
 
-- A complete business-level `order-created → inventory → payment → saga` Kafka flow through the bundled container.
 - Connectivity and compatibility with the eventual managed production providers.
 
 ### Kafka-specific observations
 
-Kafka connectivity was observed during startup because producer/consumer connections and consumer-group joins appeared in the bundled-container logs. However, the actual business-event flow (order-created → inventory → payment → saga) remains unproven.
+Kafka connectivity was observed during startup because producer/consumer connections and consumer-group joins appeared in the bundled-container logs. The actual business-event flow (`order-created → inventory → payment → saga`) was subsequently verified end-to-end through both the local Compose stack and the bundled single-container image, including payment failure and inventory compensation.
 
 ## 8. Recommended Next Sequence
 
-1. Run the local end-to-end order-flow validation (`docker compose up -d` + e2e tests) [AGENTS.md:55].
-2. Perform managed-service availability reconnaissance (MongoDB, PostgreSQL, Redis, Kafka providers).
-3. Provision managed infrastructure and reconcile connection strings.
-4. Reconcile the final container-input environment contract (resolve `.env.example` vs `.env.production.example` drift, set real `JWT_SECRET` and `SEED_*` values).
-5. Add/configure Render deployment metadata (provider descriptor, correct Dockerfile path = `deploy/render/Dockerfile`, health check on `/health`).
-6. Perform the first Render deployment.
-7. Document deployment and redeployment procedures.
+1. Perform managed-service availability reconnaissance (MongoDB, PostgreSQL, Redis, Kafka providers).
+2. Provision managed infrastructure and reconcile connection strings.
+3. Reconcile the final container-input environment contract (resolve `.env.example` vs `.env.production.example` drift, set real `JWT_SECRET` and `SEED_*` values).
+4. Add/configure Render deployment metadata (provider descriptor, correct Dockerfile path = `deploy/render/Dockerfile`, health check on `/health`).
+5. Perform the first Render deployment.
+6. Document deployment and redeployment procedures.
 
 ## Validation
 
