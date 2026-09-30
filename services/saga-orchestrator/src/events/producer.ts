@@ -1,15 +1,7 @@
-import { Kafka, Producer } from "kafkajs";
+import { Producer } from "kafkajs";
+import { createKafka } from "./kafka";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "saga-orchestrator-producer",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("saga-orchestrator-producer");
 
 let producer: Producer;
 

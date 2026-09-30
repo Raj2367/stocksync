@@ -1,4 +1,5 @@
-import { Kafka, Consumer, Message } from "kafkajs";
+import { Consumer, Message } from "kafkajs";
+import { createKafka } from "./kafka";
 import { createSaga, getSaga, updateSaga, addSagaStep } from "../saga/store";
 import {
   handleInventoryReserved,
@@ -7,16 +8,7 @@ import {
   handlePaymentFailed,
 } from "../saga/engine";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "saga-orchestrator",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("saga-orchestrator");
 
 let consumer: Consumer;
 

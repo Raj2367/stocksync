@@ -1,15 +1,7 @@
-import { Kafka, Consumer, Message } from "kafkajs";
+import { Consumer, Message } from "kafkajs";
+import { createKafka } from "./kafka";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "order-service-consumer",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("order-service-consumer");
 
 let consumer: Consumer;
 

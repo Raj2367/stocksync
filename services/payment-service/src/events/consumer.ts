@@ -1,17 +1,9 @@
-import { Kafka, Consumer, Message } from "kafkajs";
+import { Consumer, Message } from "kafkajs";
+import { createKafka } from "./kafka";
 import { publishPaymentProcessed, publishPaymentFailed } from "./producer";
 import { DEMO_MODE } from "../config";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "payment-service",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("payment-service");
 
 let consumer: Consumer;
 
