@@ -14,19 +14,19 @@ echo "Starting StockSync in single-container mode..."
 
 # Launch worker services in the background
 echo "Starting Order Service..."
-MONGO_URI="${ORDER_MONGO_URI:-mongodb://mongodb:27017/orders}" node services/order-service/dist/index.js &
+PORT="${ORDER_SERVICE_PORT:-3001}" MONGO_URI="${ORDER_MONGO_URI:-mongodb://mongodb:27017/orders}" node services/order-service/dist/index.js &
 ORDER_PID=$!
 
 echo "Starting Inventory Service..."
-node services/inventory-service/dist/index.js &
+PORT="${INVENTORY_SERVICE_PORT:-3002}" node services/inventory-service/dist/index.js &
 INVENTORY_PID=$!
 
 echo "Starting Payment Service..."
-node services/payment-service/dist/index.js &
+PORT="${PAYMENT_SERVICE_PORT:-3003}" node services/payment-service/dist/index.js &
 PAYMENT_PID=$!
 
 echo "Starting Saga Orchestrator..."
-MONGO_URI="${SAGA_MONGO_URI:-mongodb://mongodb:27017/sagas}" node services/saga-orchestrator/dist/index.js &
+PORT="${SAGA_SERVICE_PORT:-3004}" MONGO_URI="${SAGA_MONGO_URI:-mongodb://mongodb:27017/sagas}" node services/saga-orchestrator/dist/index.js &
 SAGA_PID=$!
 
 # Graceful shutdown handler: send SIGTERM to all children and wait.
@@ -44,7 +44,7 @@ shutdown() {
 trap 'shutdown; exit 0' INT TERM
 
 echo "Starting API Gateway..."
-MONGO_URI="${API_GATEWAY_MONGO_URI:-mongodb://mongodb:27017/auth}" node services/api-gateway/dist/index.js &
+PORT="${PORT:-${API_GATEWAY_PORT:-3000}}" MONGO_URI="${API_GATEWAY_MONGO_URI:-mongodb://mongodb:27017/auth}" node services/api-gateway/dist/index.js &
 GATEWAY_PID=$!
 
 # Capture all child PIDs (must be set after all PIDs are assigned)
