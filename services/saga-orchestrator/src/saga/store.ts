@@ -1,86 +1,53 @@
-export type SagaStatus =
-  | "PENDING"
-  | "AWAITING_INVENTORY"
-  | "AWAITING_PAYMENT"
-  | "COMPLETED"
-  | "CANCELLING"
-  | "CANCELLED";
+import * as sagaRepository from "./sagaRepository";
+import type { SagaRecord, SagaStatus, SagaStep } from "./sagaRepository";
 
-export interface SagaStep {
-  action: string;
-  status: "success" | "failure" | "compensating";
-  timestamp: string;
-  details?: string;
-}
+export type Saga = SagaRecord;
+export type { SagaStatus, SagaStep };
 
-export interface Saga {
-  orderId: string;
-  productId: string;
-  quantity: number;
-  customerEmail: string | null;
-  status: SagaStatus;
-  paymentId?: string;
-  failureReason?: string;
-  steps: SagaStep[];
-  createdAt: string;
-  updatedAt: string;
-}
+const DEFAULT_TENANT_ID = "";
 
-// In-memory store. In production, use Redis or PostgreSQL.
-const sagaStore = new Map<string, Saga>();
-
-export function createSaga(
+export async function createSaga(
   orderId: string,
   productId: string,
   quantity: number,
   customerEmail: string | null,
-): Saga {
-  const saga: Saga = {
+  tenantId: string = DEFAULT_TENANT_ID,
+): Promise<Saga> {
+  const record = await sagaRepository.createSaga(
+    tenantId,
     orderId,
     productId,
     quantity,
     customerEmail,
-    status: "AWAITING_INVENTORY",
-    steps: [
-      {
-        action: "ORDER_CREATED",
-        status: "success",
-        timestamp: new Date().toISOString(),
-      },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  sagaStore.set(orderId, saga);
-  return saga;
-}
-
-export function getSaga(orderId: string): Saga | undefined {
-  return sagaStore.get(orderId);
-}
-
-export function getAllSagas(): Saga[] {
-  return Array.from(sagaStore.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
+  return record;
 }
 
-export function updateSaga(
+export async function getSaga(
+  orderId: string,
+  tenantId: string = DEFAULT_TENANT_ID,
+): Promise<Saga | null> {
+  return sagaRepository.getSaga(tenantId, orderId);
+}
+
+export async function getAllSagas(
+  tenantId: string = DEFAULT_TENANT_ID,
+): Promise<Saga[]> {
+  return sagaRepository.getAllSagas(tenantId);
+}
+
+export async function updateSaga(
   orderId: string,
   updates: Partial<Saga>,
-): Saga | undefined {
-  const saga = sagaStore.get(orderId);
-  if (!saga) return undefined;
-
-  Object.assign(saga, updates, { updatedAt: new Date().toISOString() });
-  sagaStore.set(orderId, saga);
-  return saga;
+  tenantId: string = DEFAULT_TENANT_ID,
+): Promise<Saga | null> {
+  return sagaRepository.updateSaga(tenantId, orderId, updates);
 }
 
-export function addSagaStep(orderId: string, step: SagaStep): void {
-  const saga = sagaStore.get(orderId);
-  if (saga) {
-    saga.steps.push(step);
-    saga.updatedAt = new Date().toISOString();
-  }
+export async function addSagaStep(
+  orderId: string,
+  step: SagaStep,
+  tenantId: string = DEFAULT_TENANT_ID,
+): Promise<void> {
+  return sagaRepository.addSagaStep(tenantId, orderId, step);
 }

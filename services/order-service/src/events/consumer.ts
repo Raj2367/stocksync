@@ -1,15 +1,7 @@
-import { Kafka, Consumer } from "kafkajs";
+import { Consumer, Message } from "kafkajs";
+import { createKafka } from "./kafka";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "order-service-consumer",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("order-service-consumer");
 
 let consumer: Consumer;
 
@@ -31,31 +23,37 @@ export async function startConsumer(): Promise<void> {
   await consumer.connect();
   console.log("✅ Order service saga consumer connected");
 
-  await consumer.subscribe({
-    topic: "saga.order-completed",
-    fromBeginning: false,
-  });
-  await consumer.subscribe({
-    topic: "saga.order-cancelled",
-    fromBeginning: false,
-  });
+  // Saga outcomes now arrive on the consolidated "saga.result" topic. The
+  // specific outcome is selected via the KafkaJS "event-type" header.
+  await consumer.subscribe({ topic: "saga.result", fromBeginning: false });
   console.log("📡 Subscribed to saga events");
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        const event = JSON.parse(message.value!.toString());
-
-        if (topic === "saga.order-completed") {
-          await handleOrderCompleted(event as SagaOrderCompletedEvent);
-        } else if (topic === "saga.order-cancelled") {
-          await handleOrderCancelled(event as SagaOrderCancelledEvent);
-        }
+        await processSagaEvent(message);
       } catch (error) {
         console.error("Error processing saga event:", error);
       }
     },
   });
+}
+
+// Routes a single saga.result message to the appropriate Order handler based
+// on the KafkaJS "event-type" header. Extracted from eachMessage so the
+// header-based routing can be unit tested without a live Kafka broker.
+export async function processSagaEvent(message: Message): Promise<void> {
+  const eventType = message.headers?.["event-type"]?.toString();
+
+  if (eventType === "saga.order-completed") {
+    const event = JSON.parse(message.value!.toString()) as SagaOrderCompletedEvent;
+    await handleOrderCompleted(event);
+  } else if (eventType === "saga.order-cancelled") {
+    const event = JSON.parse(message.value!.toString()) as SagaOrderCancelledEvent;
+    await handleOrderCancelled(event);
+  } else {
+    console.log(`⏭️ Skipping saga.result event (event-type: ${eventType})`);
+  }
 }
 
 export async function stopConsumer(): Promise<void> {

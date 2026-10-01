@@ -228,7 +228,7 @@ describe("Inventory Service Integration Tests", () => {
       });
       await consumer.connect();
       await consumer.subscribe({
-        topic: "inventory.reservation-failed",
+        topic: "inventory.result",
         fromBeginning: true,
       });
 

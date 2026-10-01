@@ -1,15 +1,7 @@
-import { Kafka, Producer } from "kafkajs";
+import { Producer } from "kafkajs";
+import { createKafka } from "./kafka";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "order-service",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("order-service");
 
 let producer: Producer;
 
@@ -28,9 +20,11 @@ export async function disconnectKafka(): Promise<void> {
 
 export interface OrderCreatedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
   customerEmail: string | null;
+  paymentMode: string;
   timestamp: string;
 }
 

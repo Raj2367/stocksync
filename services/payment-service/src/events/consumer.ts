@@ -1,23 +1,18 @@
-import { Kafka, Consumer } from "kafkajs";
+import { Consumer, Message } from "kafkajs";
+import { createKafka } from "./kafka";
 import { publishPaymentProcessed, publishPaymentFailed } from "./producer";
+import { DEMO_MODE } from "../config";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "payment-service",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("payment-service");
 
 let consumer: Consumer;
 
 interface InventoryReservedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reservationId: number;
   timestamp: string;
 }
@@ -29,20 +24,15 @@ export async function startConsumer(): Promise<void> {
   console.log("✅ Payment consumer connected");
 
   await consumer.subscribe({
-    topic: "inventory.reserved",
+    topic: "inventory.result",
     fromBeginning: false,
   });
-  console.log("📡 Subscribed to inventory.reserved");
+  console.log("📡 Subscribed to inventory.result");
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       try {
-        const event: InventoryReservedEvent = JSON.parse(
-          message.value!.toString(),
-        );
-        console.log(`📥 Received inventory.reserved: ${event.orderId}`);
-
-        await handlePayment(event);
+        await processInventoryMessage(message);
       } catch (error) {
         console.error("Error processing payment:", error);
       }
@@ -57,13 +47,39 @@ export async function stopConsumer(): Promise<void> {
   }
 }
 
-async function handlePayment(event: InventoryReservedEvent): Promise<void> {
+// Dispatches a single inventory.result message. Only the
+// "inventory.reserved" event-type triggers payment handling; other
+// events arriving on the same topic (e.g. inventory.reservation-failed)
+// are skipped without touching payment logic.
+export async function processInventoryMessage(
+  message: Message,
+): Promise<void> {
+  const eventType = message.headers?.["event-type"]?.toString();
+  if (eventType !== "inventory.reserved") {
+    console.log(`⏭️ Skipping inventory.result event (event-type: ${eventType})`);
+    return;
+  }
+
+  const event: InventoryReservedEvent = JSON.parse(
+    message.value!.toString(),
+  );
+  console.log(`📥 Received inventory.reserved: ${event.orderId}`);
+
+  await handlePayment(event);
+}
+
+export async function handlePayment(event: InventoryReservedEvent): Promise<void> {
   // Simulate payment processing delay (100-500ms)
   const delay = Math.floor(Math.random() * 400) + 100;
   await sleep(delay);
 
-  // Random approval: ~70% success rate
-  const isApproved = Math.random() < 0.7;
+  // DEMO_MODE uses a deterministic decision based on paymentMode:
+  // PREPAID orders are always approved (funds already collected), any other
+  // mode (e.g. UNPAID) is declined (no funds captured). Outside DEMO_MODE
+  // the original randomized ~70% success rate is preserved exactly.
+  const isApproved = DEMO_MODE
+    ? event.paymentMode === "PREPAID"
+    : Math.random() < 0.7;
 
   if (isApproved) {
     const paymentId = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -74,8 +90,10 @@ async function handlePayment(event: InventoryReservedEvent): Promise<void> {
 
     await publishPaymentProcessed({
       orderId: event.orderId,
+      tenantId: event.tenantId,
       productId: event.productId,
       quantity: event.quantity,
+      paymentMode: event.paymentMode,
       paymentId: paymentId,
       amount: calculateAmount(event.productId, event.quantity),
       timestamp: new Date().toISOString(),
@@ -89,8 +107,10 @@ async function handlePayment(event: InventoryReservedEvent): Promise<void> {
 
     await publishPaymentFailed({
       orderId: event.orderId,
+      tenantId: event.tenantId,
       productId: event.productId,
       quantity: event.quantity,
+      paymentMode: event.paymentMode,
       reason: failureReason,
       timestamp: new Date().toISOString(),
     });

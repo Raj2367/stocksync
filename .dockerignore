@@ -1,0 +1,14 @@
+.git/
+.kilo/
+
+**/node_modules/
+**/dist/
+**/coverage/
+
+.env
+.env.*
+
+**/.DS_Store
+**/*.log
+**/.vscode/
+**/.idea/

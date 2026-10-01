@@ -1,28 +1,22 @@
-import { Kafka, Consumer } from "kafkajs";
+import { Consumer } from "kafkajs";
+import { createKafka } from "./kafka";
 import { query, getClient } from "../db/connection";
 import {
   publishInventoryReserved,
   publishInventoryReservationFailed,
 } from "./producer";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "inventory-service",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("inventory-service");
 
 let consumer: Consumer;
 
 interface OrderCreatedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
   customerEmail: string | null;
+  paymentMode: string;
   timestamp: string;
 }
 
@@ -57,7 +51,7 @@ export async function stopConsumer(): Promise<void> {
   }
 }
 
-async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
+export async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
   const client = await getClient();
 
   try {
@@ -74,8 +68,10 @@ async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
       console.log(`❌ Product not found: ${event.productId}`);
       await publishInventoryReservationFailed({
         orderId: event.orderId,
+        tenantId: event.tenantId,
         productId: event.productId,
         quantity: event.quantity,
+        paymentMode: event.paymentMode,
         reason: "PRODUCT_NOT_FOUND",
         timestamp: new Date().toISOString(),
       });
@@ -92,8 +88,10 @@ async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
       );
       await publishInventoryReservationFailed({
         orderId: event.orderId,
+        tenantId: event.tenantId,
         productId: event.productId,
         quantity: event.quantity,
+        paymentMode: event.paymentMode,
         reason: "INSUFFICIENT_STOCK",
         timestamp: new Date().toISOString(),
       });
@@ -121,8 +119,10 @@ async function handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
     // Publish success event
     await publishInventoryReserved({
       orderId: event.orderId,
+      tenantId: event.tenantId,
       productId: event.productId,
       quantity: event.quantity,
+      paymentMode: event.paymentMode,
       reservationId: product.id,
       timestamp: new Date().toISOString(),
     });

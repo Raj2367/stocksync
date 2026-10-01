@@ -5,7 +5,7 @@ const JWT_SECRET =
   process.env.JWT_SECRET || "stocksync-dev-secret-change-in-production";
 
 export interface AuthRequest extends Request {
-  user?: { userId: string; email: string; role: string };
+  user?: { userId: string; email: string; tenantId: string; role: string };
 }
 
 export function authenticateToken(

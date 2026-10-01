@@ -1,17 +1,14 @@
-import { Kafka, Producer } from "kafkajs";
+import { Producer } from "kafkajs";
+import { createKafka } from "./kafka";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "payment-service-producer",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("payment-service-producer");
 
 let producer: Producer;
+
+// Consolidated topic for all payment outcome events. Both
+// payment.processed and payment.failed flows now publish here,
+// distinguished by the preserved "event-type" header.
+const PAYMENT_RESULT_TOPIC = "payment.result";
 
 export async function connectProducer(): Promise<void> {
   producer = kafka.producer();
@@ -27,8 +24,10 @@ export async function disconnectProducer(): Promise<void> {
 
 export interface PaymentProcessedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   paymentId: string;
   amount: number;
   timestamp: string;
@@ -36,8 +35,10 @@ export interface PaymentProcessedEvent {
 
 export interface PaymentFailedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }
@@ -50,7 +51,7 @@ export async function publishPaymentProcessed(
   }
 
   await producer.send({
-    topic: "payment.processed",
+    topic: PAYMENT_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
@@ -74,7 +75,7 @@ export async function publishPaymentFailed(
   }
 
   await producer.send({
-    topic: "payment.failed",
+    topic: PAYMENT_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,

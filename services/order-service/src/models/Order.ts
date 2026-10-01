@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOrder extends Document {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
   customerEmail: string | null;
@@ -12,6 +13,7 @@ export interface IOrder extends Document {
     | "COMPLETED"
     | "CANCELLED";
   paymentId?: string;
+  paymentMode: string;
   failureReason?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +22,7 @@ export interface IOrder extends Document {
 const OrderSchema = new Schema<IOrder>(
   {
     orderId: { type: String, required: true, unique: true, index: true },
+    tenantId: { type: String, required: true, index: true },
     productId: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1 },
     customerEmail: { type: String, default: null },
@@ -39,6 +42,7 @@ const OrderSchema = new Schema<IOrder>(
       default: "AWAITING_INVENTORY",
     },
     paymentId: { type: String, default: null },
+    paymentMode: { type: String, default: "UNPAID" },
     failureReason: { type: String, default: null },
   },
   { timestamps: true },

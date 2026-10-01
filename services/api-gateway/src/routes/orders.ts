@@ -10,7 +10,10 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const response = await axios.post(`${ORDER_SERVICE_URL}/orders`, req.body, {
       timeout: 10000,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Tenant-Id": req.user!.tenantId,
+      },
     });
     res.status(response.status).json(response.data);
   } catch (error: any) {
@@ -27,6 +30,7 @@ router.get("/:orderId", authenticateToken, async (req: AuthRequest, res) => {
       `${ORDER_SERVICE_URL}/orders/${req.params.orderId}`,
       {
         timeout: 5000,
+        headers: { "X-Tenant-Id": req.user!.tenantId },
       },
     );
     res.json(response.data);
@@ -42,6 +46,7 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
     const response = await axios.get(`${ORDER_SERVICE_URL}/orders`, {
       timeout: 5000,
       params: req.query,
+      headers: { "X-Tenant-Id": req.user!.tenantId },
     });
     res.json(response.data);
   } catch (error: any) {

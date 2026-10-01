@@ -1,17 +1,14 @@
-import { Kafka, Producer } from "kafkajs";
+import { Producer } from "kafkajs";
+import { createKafka } from "./kafka";
 
-const KAFKA_BROKER = process.env.KAFKA_BROKER || "kafka:29092";
-
-const kafka = new Kafka({
-  clientId: "inventory-service-producer",
-  brokers: [KAFKA_BROKER],
-  retry: {
-    initialRetryTime: 300,
-    retries: 10,
-  },
-});
+const kafka = createKafka("inventory-service-producer");
 
 let producer: Producer;
+
+// Consolidated topic for all inventory outcome events. Both
+// inventory.reserved and inventory.reservation-failed flows now publish
+// here, distinguished by the preserved "event-type" header.
+const INVENTORY_RESULT_TOPIC = "inventory.result";
 
 export async function connectProducer(): Promise<void> {
   producer = kafka.producer();
@@ -27,16 +24,20 @@ export async function disconnectProducer(): Promise<void> {
 
 export interface InventoryReservedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reservationId: number;
   timestamp: string;
 }
 
 export interface InventoryReservationFailedEvent {
   orderId: string;
+  tenantId: string;
   productId: string;
   quantity: number;
+  paymentMode: string;
   reason: string;
   timestamp: string;
 }
@@ -49,7 +50,7 @@ export async function publishInventoryReserved(
   }
 
   await producer.send({
-    topic: "inventory.reserved",
+    topic: INVENTORY_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
@@ -73,7 +74,7 @@ export async function publishInventoryReservationFailed(
   }
 
   await producer.send({
-    topic: "inventory.reservation-failed",
+    topic: INVENTORY_RESULT_TOPIC,
     messages: [
       {
         key: event.orderId,
