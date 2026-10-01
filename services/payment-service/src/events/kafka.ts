@@ -9,10 +9,16 @@ export function createKafka(clientId: string): Kafka {
   if (saslUsername && saslPassword) {
     const mechanism = (process.env.KAFKA_SASL_MECHANISM || "scram-sha-256");
     const sasl = { mechanism, username: saslUsername, password: saslPassword } as SASLOptions;
+
+    const caCertB64 = process.env.KAFKA_CA_CERT_B64;
+    const ssl = caCertB64
+      ? { ca: Buffer.from(caCertB64, "base64").toString("utf8") }
+      : true;
+
     return new Kafka({
       clientId,
       brokers: [KAFKA_BROKER],
-      ssl: true,
+      ssl,
       sasl,
       retry: {
         initialRetryTime: 300,
