@@ -1,6 +1,6 @@
 # ADR-011 — Vector storage for RAG
 
-**Status:** Open — resolve during Phase 2 before retrieval implementation.
+**Status:** Accepted
 
 **Copilot location:** The Copilot/RAG module will live inside the API Gateway service boundary rather than as a new microservice. This keeps the first release small and lets the module reuse gateway authentication, tenant context, and Redis rate limiting. The vector store must therefore be reachable from the gateway without bypassing service ownership.
 
@@ -29,6 +29,20 @@ Store a small RAG collection containing chunk text, tenant metadata, and embeddi
 ## Decision rule
 
 Pick the simplest free-tier-compatible option that is sufficient for a corpus of roughly 100 chunks or fewer and preserves strict tenant filtering before LLM context construction. Because the Copilot lives in the gateway, Option B avoids opening a second database connection class in the gateway and is the default simplicity candidate; Option A remains acceptable only if deployment/free-tier validation shows a clear benefit without adding material complexity. Do not add a dedicated vector database unless both options above are infeasible.
+
+## Decision
+
+The architecture for v1 is:
+
+- Vector store: MongoDB Atlas, reusing the existing Gateway connection rather than creating a separate database client or service boundary.
+- Retrieval: filter by tenant in MongoDB first, then compute cosine similarity in Node.js for the eligible chunk set.
+- pgvector on Aiven Postgres is technically viable, but it is rejected for v1 because the corpus is small (roughly 100 chunks) and adding a second connection class to the Gateway adds complexity without meaningful benefit.
+- Embedding provider: Google Gemini API.
+- LLM provider: Google Gemini API.
+- Corpus location: the intended knowledge corpus lives under data/knowledge/ with shared/, acme/, and beta/ subdirectories.
+- Provider auth environment variable: GEMINI_API_KEY.
+
+This decision keeps the first implementation small, consistent with the existing infrastructure, and aligned with strict tenant isolation before any LLM prompt context is constructed.
 
 ## Required Phase 2 acceptance
 

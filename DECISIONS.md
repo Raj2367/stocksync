@@ -71,7 +71,7 @@ Seed passwords are supplied through environment variables. Local development exa
 
 **Constraint:** Transactional order/inventory data stays behind existing service APIs; the Copilot does not read another service's transactional tables directly.
 
-**Implementation status:** The concrete vector-storage option is intentionally deferred to ADR-011 and Phase 2.
+**Implementation status:** The concrete vector-storage option is resolved by ADR-011 and is no longer deferred.
 
 ## ADR-010 — Framework restraint
 
@@ -79,11 +79,11 @@ Seed passwords are supplied through environment variables. Local development exa
 
 **Why:** The developer has not previously built RAG or used LLM APIs. A direct TypeScript implementation is easier to understand, debug, and defend in interviews.
 
-## ADR-011 — Vector storage for RAG (pending Phase 2)
+## ADR-011 — Vector storage for RAG
 
-**Status:** Open; canonical decision record is [`docs/ADR-011-VECTOR-STORE.md`](docs/ADR-011-VECTOR-STORE.md).
+**Status:** Accepted; canonical decision record is [`docs/ADR-011-VECTOR-STORE.md`](docs/ADR-011-VECTOR-STORE.md).
 
-The detailed options, decision rule, and Phase 2 acceptance criteria live in the linked ADR only; do not duplicate its full text here.
+The detailed options, decision rule, and Phase 2 acceptance criteria live in the linked ADR only; do not duplicate its full text here. This ADR is resolved and records the selected v1 architectural choice.
 
 ## ADR-012 — Public TLS edge (deployment)
 
