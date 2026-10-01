@@ -4,11 +4,32 @@ import { chunkDocument, Chunk } from "./chunker";
 import { embedText } from "./gemini";
 import KnowledgeChunk from "../models/KnowledgeChunk";
 
+export class CorpusRootMissingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CorpusRootMissingError";
+  }
+}
+
+export class CorpusEmptyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CorpusEmptyError";
+  }
+}
+
+export class CorpusStructureError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CorpusStructureError";
+  }
+}
+
 export async function syncKnowledgeCorpus(corpusRoot: string): Promise<void> {
   const absoluteRoot = path.resolve(corpusRoot);
 
   if (!fs.existsSync(absoluteRoot)) {
-    throw new Error(`Corpus root does not exist: ${absoluteRoot}`);
+    throw new CorpusRootMissingError(`Corpus root does not exist: ${absoluteRoot}`);
   }
 
   const discoveredFiles: string[] = [];
@@ -31,7 +52,7 @@ export async function syncKnowledgeCorpus(corpusRoot: string): Promise<void> {
   walk(absoluteRoot);
 
   if (discoveredFiles.length === 0) {
-    throw new Error(`No Markdown files found in corpus: ${absoluteRoot}`);
+    throw new CorpusEmptyError(`No Markdown files found in corpus: ${absoluteRoot}`);
   }
 
   for (const filePath of discoveredFiles) {
@@ -40,7 +61,7 @@ export async function syncKnowledgeCorpus(corpusRoot: string): Promise<void> {
     const segments = relPosix.split("/");
 
     if (segments.length < 2) {
-      throw new Error(
+      throw new CorpusStructureError(
         `Markdown file at corpus root is not allowed — must be under a tenant directory: ${filePath}`,
       );
     }
