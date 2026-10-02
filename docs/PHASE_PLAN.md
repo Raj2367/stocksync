@@ -131,24 +131,24 @@ A minimal Phase 0 deployment is technically feasible. If it is not, change the d
 
 ---
 
-## Phase 1 — Minimal frontend
+## Phase 1 — Frontend
 
-**Target:** 3–4 hours
+This phase implements the StockSync frontend as defined by
+[docs/ADR-013-FRONTEND-ARCHITECTURE.md](docs/ADR-013-FRONTEND-ARCHITECTURE.md).
 
 ### Scope
 
-One small app/page with:
-
-- login
-- inventory list/search
-- place order
-- order status/history
-- Copilot panel placeholder
-- demo-only force-payment-failure control when `DEMO_MODE=true`
+- Separate top-level `frontend/` application.
+- Next.js + TypeScript + Tailwind CSS + shadcn/ui.
+- Direct communication with the existing API Gateway (no BFF).
+- Existing JWT authentication via `POST /auth/login`.
+- Tenant context derived exclusively from the authenticated JWT.
+- Copilot as a first-class workflow (Login → Orders → Order detail → Ask Copilot).
+- Demo-only force-payment-failure control when `DEMO_MODE=true`.
 
 ### Exit gate
 
-A new browser session can log in, place an order, force a demo failure, and view order status without Postman.
+A new browser session can complete the ADR-013 demo journey: Login → Orders list → Order detail → Ask Copilot → grounded answer with live-fact indicators and source attribution.
 
 ---
 
