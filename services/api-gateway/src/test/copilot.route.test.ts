@@ -18,6 +18,10 @@ jest.mock("../rag/liveFacts", () => ({
   fetchLiveOrderFacts: jest.fn(),
 }));
 
+jest.mock("../middleware/copilotRateLimiter", () => ({
+  copilotRateLimiter: (_req: any, _res: any, next: any) => next(),
+}));
+
 import { authenticateToken } from "../middleware/auth";
 import { buildCopilotPrompt } from "../rag/copilotPrompt";
 import { generateText } from "../rag/geminiLlm";
