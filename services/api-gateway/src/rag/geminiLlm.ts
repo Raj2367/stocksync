@@ -23,7 +23,7 @@ export async function generateText(prompt: string): Promise<string> {
 
   const ai = getClient();
 
-  const model = process.env.GEMINI_LLM_MODEL || "gemini-3.8-flash";
+  const model = process.env.GEMINI_LLM_MODEL || "gemini-3.5-flash-lite";
 
   const response = await ai.models.generateContent({
     model,

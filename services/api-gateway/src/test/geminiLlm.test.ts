@@ -179,7 +179,7 @@ describe("geminiLlm provider", () => {
     expect(mockGoogleGenAI).toHaveBeenCalledWith({ apiKey: "test-gemini-key" });
   });
 
-  it("default model is exactly 'gemini-3.8-flash'", async () => {
+  it("default model is exactly 'gemini-3.5-flash-lite'", async () => {
     process.env.GEMINI_API_KEY = "test-gemini-key";
     delete process.env.GEMINI_LLM_MODEL;
     const { generateText } = require("../rag/geminiLlm");
@@ -189,7 +189,7 @@ describe("geminiLlm provider", () => {
     await generateText("test");
 
     expect(mockGenerateContent).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gemini-3.8-flash" }),
+      expect.objectContaining({ model: "gemini-3.5-flash-lite" }),
     );
   });
 
@@ -207,7 +207,7 @@ describe("geminiLlm provider", () => {
     );
   });
 
-  it("GEMINI_LLM_MODEL empty string falls back to 'gemini-3.8-flash'", async () => {
+  it("GEMINI_LLM_MODEL empty string falls back to 'gemini-3.5-flash-lite'", async () => {
     process.env.GEMINI_API_KEY = "test-gemini-key";
     process.env.GEMINI_LLM_MODEL = "";
     const { generateText } = require("../rag/geminiLlm");
@@ -217,7 +217,7 @@ describe("geminiLlm provider", () => {
     await generateText("test");
 
     expect(mockGenerateContent).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gemini-3.8-flash" }),
+      expect.objectContaining({ model: "gemini-3.5-flash-lite" }),
     );
   });
 
@@ -245,7 +245,7 @@ describe("geminiLlm provider", () => {
     await generateText("prompt text");
 
     const callArgs = mockGenerateContent.mock.calls[0][0];
-    expect(callArgs).toHaveProperty("model", "gemini-3.8-flash");
+    expect(callArgs).toHaveProperty("model", "gemini-3.5-flash-lite");
     expect(callArgs).toHaveProperty("contents", "prompt text");
     expect(Object.keys(callArgs).sort()).toEqual(["contents", "model"]);
   });
