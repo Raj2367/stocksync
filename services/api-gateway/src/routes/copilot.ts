@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { copilotRateLimiter } from "../middleware/copilotRateLimiter";
 import { buildCopilotPrompt } from "../rag/copilotPrompt";
 import { generateText } from "../rag/geminiLlm";
 import { fetchLiveOrderFacts, LiveOrderFacts } from "../rag/liveFacts";
@@ -24,7 +25,7 @@ function getProviderStatus(error: unknown): number | undefined {
   return undefined;
 }
 
-router.post("/ask", authenticateToken, async (req: AuthRequest, res) => {
+router.post("/ask", authenticateToken, copilotRateLimiter, async (req: AuthRequest, res) => {
   const body = req.body;
 
   if (!body || typeof body !== "object" || typeof body.question !== "string") {
