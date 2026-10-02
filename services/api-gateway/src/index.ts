@@ -16,6 +16,7 @@ import healthRouter from "./routes/health";
 import { orderProxy } from "./routes/orders";
 import { inventoryProxy } from "./routes/inventory";
 import { sagaProxy } from "./routes/sagas";
+import { copilotRouter } from "./routes/copilot";
 
 const app = express();
 app.use(cors());
@@ -46,6 +47,7 @@ app.use("/auth", authRouter);
 app.use("/orders", orderProxy);
 app.use("/inventory", inventoryProxy);
 app.use("/sagas", sagaProxy);
+app.use("/copilot", copilotRouter);
 
 // Global error handler
 app.use(
