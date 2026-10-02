@@ -37,6 +37,8 @@ FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
+COPY data/knowledge ./data/knowledge
+
 ENV NODE_ENV=production
 
 # Copy package metadata from build context and install production deps

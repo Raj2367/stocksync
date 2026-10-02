@@ -1,0 +1,5 @@
+Acme operators should perform a daily reconciliation for all orders above 25 units before closing the business day. This rule is intended for review of high-volume or unusually large requests that may deserve manual validation before shipping or settlement. The daily check should confirm that the order was created in the correct tenant context, that the saga status is aligned with the order pipeline, and that any open reservation is either progressing or has a clear compensation path.
+
+For Acme, any order above this threshold is treated as an operational exception unless the queue clearly shows normal progression. Operators should review the associated saga record, confirm whether the inventory reservation was released or committed, and escalate if the flow is stalled in `AWAITING_INVENTORY` or `AWAITING_PAYMENT` beyond the expected handling window.
+
+This is a demo-only operational policy for tenant-scoped knowledge retrieval and is not a statement that StockSync enforces this rule internally.
