@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { buildCopilotPrompt } from "../rag/copilotPrompt";
 import { generateText } from "../rag/geminiLlm";
+import { fetchLiveOrderFacts, LiveOrderFacts } from "../rag/liveFacts";
 
 const router = Router();
 
@@ -38,14 +39,46 @@ router.post("/ask", authenticateToken, async (req: AuthRequest, res) => {
     return;
   }
 
+  const orderId = body.orderId;
+
+  if (orderId !== undefined) {
+    if (typeof orderId !== "string") {
+      res.status(400).json({ error: "orderId must be a string" });
+      return;
+    }
+    if (orderId.trim().length === 0) {
+      res.status(400).json({ error: "orderId must not be empty" });
+      return;
+    }
+  }
+
   const tenantId = req.user!.tenantId;
+
+  let liveOrderFacts: LiveOrderFacts | undefined;
+
+  if (orderId !== undefined) {
+    try {
+      liveOrderFacts = await fetchLiveOrderFacts(tenantId, orderId);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch live order facts" });
+      return;
+    }
+  }
 
   let promptAndChunks;
   try {
-    promptAndChunks = await buildCopilotPrompt({
-      tenantId,
-      question,
-    });
+    if (liveOrderFacts !== undefined) {
+      promptAndChunks = await buildCopilotPrompt({
+        tenantId,
+        question,
+        liveOrderFacts,
+      });
+    } else {
+      promptAndChunks = await buildCopilotPrompt({
+        tenantId,
+        question,
+      });
+    }
   } catch {
     res.status(500).json({ error: "Failed to prepare copilot request" });
     return;
@@ -72,7 +105,14 @@ router.post("/ask", authenticateToken, async (req: AuthRequest, res) => {
       score: chunk.score,
     }));
 
-    res.status(200).json({ answer, sources });
+    const liveFactsUsed = liveOrderFacts
+      ? {
+          order: liveOrderFacts.order.kind === "found",
+          saga: liveOrderFacts.saga.kind === "found",
+        }
+      : { order: false, saga: false };
+
+    res.status(200).json({ answer, sources, liveFactsUsed });
   } catch (error) {
     if (error instanceof TimeoutError) {
       res.status(504).json({ error: "Copilot generation timed out" });
