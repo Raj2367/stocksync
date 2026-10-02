@@ -14,13 +14,19 @@ jest.mock("../rag/geminiLlm", () => ({
   generateText: jest.fn(),
 }));
 
+jest.mock("../rag/liveFacts", () => ({
+  fetchLiveOrderFacts: jest.fn(),
+}));
+
 import { authenticateToken } from "../middleware/auth";
 import { buildCopilotPrompt } from "../rag/copilotPrompt";
 import { generateText } from "../rag/geminiLlm";
+import { fetchLiveOrderFacts } from "../rag/liveFacts";
 
 const mockAuthenticateToken = authenticateToken as jest.MockedFunction<typeof authenticateToken>;
 const mockBuildCopilotPrompt = buildCopilotPrompt as jest.MockedFunction<typeof buildCopilotPrompt>;
 const mockGenerateText = generateText as jest.MockedFunction<typeof generateText>;
+const mockFetchLiveOrderFacts = fetchLiveOrderFacts as jest.MockedFunction<typeof fetchLiveOrderFacts>;
 
 function createTestApp(): Express {
   const app = express();
@@ -41,6 +47,11 @@ describe("POST /copilot/ask", () => {
         email: "user@acme.example",
       };
       next();
+    });
+
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "not_found" },
+      saga: { kind: "not_found" },
     });
   });
 
@@ -639,5 +650,241 @@ describe("POST /copilot/ask", () => {
     expect(res.status).toBe(200);
     expect(mockBuildCopilotPrompt).toHaveBeenCalledTimes(1);
     expect(mockGenerateText).toHaveBeenCalledTimes(1);
+    expect(mockFetchLiveOrderFacts).not.toHaveBeenCalled();
+  });
+
+  it("valid request without orderId: fetchLiveOrderFacts not called, buildCopilotPrompt called exactly with { tenantId, question }", async () => {
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test" });
+
+    expect(res.status).toBe(200);
+    expect(mockFetchLiveOrderFacts).not.toHaveBeenCalled();
+    expect(mockBuildCopilotPrompt).toHaveBeenCalledWith({
+      tenantId: "tenant-acme",
+      question: "test",
+    });
+    expect(res.body.liveFactsUsed).toEqual({ order: false, saga: false });
+  });
+
+  it("valid request with orderId fetches live facts and passes them to buildCopilotPrompt", async () => {
+    const liveFacts = {
+      order: { kind: "found" as const, data: { orderId: "ord-1" } },
+      saga: { kind: "found" as const, data: { sagaId: "s-1" } },
+    };
+    mockFetchLiveOrderFacts.mockResolvedValue(liveFacts);
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(res.status).toBe(200);
+    expect(mockFetchLiveOrderFacts).toHaveBeenCalledWith("tenant-acme", "ord-1");
+    expect(mockBuildCopilotPrompt).toHaveBeenCalledWith({
+      tenantId: "tenant-acme",
+      question: "test",
+      liveOrderFacts: liveFacts,
+    });
+    expect(res.body.liveFactsUsed).toEqual({ order: true, saga: true });
+  });
+
+  it("order found, saga not_found: liveFactsUsed order true, saga false", async () => {
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "found", data: { orderId: "ord-1" } },
+      saga: { kind: "not_found" },
+    });
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.liveFactsUsed).toEqual({ order: true, saga: false });
+  });
+
+  it("order not_found, saga found: liveFactsUsed order false, saga true", async () => {
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "not_found" },
+      saga: { kind: "found", data: { sagaId: "s-1" } },
+    });
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.liveFactsUsed).toEqual({ order: false, saga: true });
+  });
+
+  it("both live facts not_found returns HTTP 200 (not 404)", async () => {
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "not_found" },
+      saga: { kind: "not_found" },
+    });
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "missing-1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.liveFactsUsed).toEqual({ order: false, saga: false });
+  });
+
+  it("one or both live facts unavailable returns HTTP 200 (not 503)", async () => {
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "unavailable" },
+      saga: { kind: "found", data: { sagaId: "s-1" } },
+    });
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.liveFactsUsed).toEqual({ order: false, saga: true });
+  });
+
+  it("orderId non-string returns 400 and does not call fetchLiveOrderFacts or buildCopilotPrompt", async () => {
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: 123 });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "orderId must be a string" });
+    expect(mockFetchLiveOrderFacts).not.toHaveBeenCalled();
+    expect(mockBuildCopilotPrompt).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
+  });
+
+  it("orderId empty/whitespace returns 400 and does not call fetchLiveOrderFacts or buildCopilotPrompt", async () => {
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "   " });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "orderId must not be empty" });
+    expect(mockFetchLiveOrderFacts).not.toHaveBeenCalled();
+    expect(mockBuildCopilotPrompt).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
+  });
+
+  it("tenant isolation: fetchLiveOrderFacts receives tenant from JWT, not from body", async () => {
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "not_found" },
+      saga: { kind: "not_found" },
+    });
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    mockAuthenticateToken.mockImplementationOnce((_req: any, _res: any, next: any) => {
+      _req.user = {
+        userId: "u2",
+        tenantId: "tenant-beta",
+        role: "USER",
+        email: "user@beta.example",
+      };
+      next();
+    });
+
+    const app = createTestApp();
+
+    await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(mockFetchLiveOrderFacts).toHaveBeenCalledWith("tenant-beta", "ord-1");
+  });
+
+  it("fetchLiveOrderFacts unexpectedly rejects returns 500 with generic error", async () => {
+    mockFetchLiveOrderFacts.mockRejectedValue(new Error("unexpected failure"));
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: "Failed to fetch live order facts" });
+  });
+
+  it("live order data is not copied into sources", async () => {
+    mockFetchLiveOrderFacts.mockResolvedValue({
+      order: { kind: "found", data: { orderId: "ord-1", customerEmail: "leak@test.com" } },
+      saga: { kind: "not_found" },
+    });
+    mockBuildCopilotPrompt.mockResolvedValue({
+      prompt: "prompt",
+      retrievedChunks: [
+        {
+          tenantId: "tenant-acme",
+          source: "acme/doc.md",
+          chunkIndex: 0,
+          text: "chunk text",
+          chunkId: "chunk-1",
+          score: 0.82,
+        },
+      ],
+    });
+    mockGenerateText.mockResolvedValue("answer");
+
+    const app = createTestApp();
+
+    const res = await request(app)
+      .post("/copilot/ask")
+      .send({ question: "test", orderId: "ord-1" });
+
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(res.body.sources)).not.toContain("leak@test.com");
   });
 });
