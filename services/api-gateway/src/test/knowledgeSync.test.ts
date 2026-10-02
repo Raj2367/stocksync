@@ -69,7 +69,7 @@ describe("knowledgeSync", () => {
 
     const updateCall = mockUpdateOne.mock.calls[0];
     const setObj = updateCall[1] as { $set: any };
-    expect(setObj.$set.tenantId).toBe("acme");
+    expect(setObj.$set.tenantId).toBe("tenant-acme");
     expect(setObj.$set.source).toBe("acme/docs/runbook.md");
   });
 
@@ -128,7 +128,7 @@ describe("knowledgeSync", () => {
     writeCorpusFile("acme/test.md", chunkText);
 
     const { chunkDocument } = require("../rag/chunker");
-    const chunks = chunkDocument(chunkText, "acme/test.md", "acme");
+    const chunks = chunkDocument(chunkText, "acme/test.md", "tenant-acme");
 
     mockFind.mockReturnValue({
       select: jest
@@ -182,7 +182,7 @@ describe("knowledgeSync", () => {
 
     expect(mockDeleteMany).toHaveBeenCalledTimes(1);
     const deleteCall = mockDeleteMany.mock.calls[0][0];
-    expect(deleteCall.tenantId).toEqual({ $in: ["acme"] });
+    expect(deleteCall.tenantId).toEqual({ $in: ["tenant-acme"] });
     // $nin contains the current chunk IDs (not the stale one)
     expect(deleteCall.chunkId).toEqual({ $nin: expect.any(Array) });
     // The stale chunk ID is NOT in $nin — it gets deleted
@@ -218,7 +218,7 @@ describe("knowledgeSync", () => {
     expect(mockUpdateOne).toHaveBeenCalledWith(
       { chunkId: expect.any(String) },
       expect.objectContaining({
-        $set: expect.objectContaining({ tenantId: "acme" }),
+        $set: expect.objectContaining({ tenantId: "tenant-acme" }),
       }),
       { upsert: true },
     );
@@ -311,5 +311,49 @@ describe("knowledgeSync", () => {
     const updateCall = mockUpdateOne.mock.calls[0];
     expect(updateCall[0]).toEqual({ chunkId: expect.any(String) });
     expect(updateCall[2]).toEqual({ upsert: true });
+  });
+
+  it("acme/ directory maps to tenant-acme in KnowledgeChunk.updateOne", async () => {
+    writeCorpusFile("acme/knowledge.md", "# Acme knowledge");
+
+    await syncKnowledgeCorpus(tmpDir);
+
+    expect(mockUpdateOne).toHaveBeenCalled();
+    const setObj = mockUpdateOne.mock.calls[0][1] as { $set: any };
+    expect(setObj.$set.tenantId).toBe("tenant-acme");
+  });
+
+  it("beta/ directory maps to tenant-beta in KnowledgeChunk.updateOne", async () => {
+    writeCorpusFile("beta/knowledge.md", "# Beta knowledge");
+
+    await syncKnowledgeCorpus(tmpDir);
+
+    expect(mockUpdateOne).toHaveBeenCalled();
+    const setObj = mockUpdateOne.mock.calls[0][1] as { $set: any };
+    expect(setObj.$set.tenantId).toBe("tenant-beta");
+  });
+
+  it("shared/ directory maps to tenantId 'shared' in KnowledgeChunk.updateOne", async () => {
+    writeCorpusFile("shared/knowledge.md", "# Shared knowledge");
+
+    await syncKnowledgeCorpus(tmpDir);
+
+    expect(mockUpdateOne).toHaveBeenCalled();
+    const setObj = mockUpdateOne.mock.calls[0][1] as { $set: any };
+    expect(setObj.$set.tenantId).toBe("shared");
+  });
+
+  it("tenantId filter for stale deletion uses mapped tenant IDs", async () => {
+    writeCorpusFile("beta/current.md", "# Current beta");
+
+    mockFind.mockReturnValue({
+      select: jest.fn().mockResolvedValue([{ chunkId: "stale-beta-chunk" }]),
+    });
+
+    await syncKnowledgeCorpus(tmpDir);
+
+    expect(mockDeleteMany).toHaveBeenCalledTimes(1);
+    const deleteCall = mockDeleteMany.mock.calls[0][0];
+    expect(deleteCall.tenantId).toEqual({ $in: ["tenant-beta"] });
   });
 });

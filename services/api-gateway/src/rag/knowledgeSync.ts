@@ -25,6 +25,13 @@ export class CorpusStructureError extends Error {
   }
 }
 
+function deriveTenantId(firstSegment: string): string {
+  if (firstSegment === "shared") {
+    return "shared";
+  }
+  return `tenant-${firstSegment}`;
+}
+
 export async function syncKnowledgeCorpus(corpusRoot: string): Promise<void> {
   const absoluteRoot = path.resolve(corpusRoot);
 
@@ -75,7 +82,8 @@ export async function syncKnowledgeCorpus(corpusRoot: string): Promise<void> {
     const relPosix = relPath.split(path.sep).join("/");
     const segments = relPosix.split("/");
 
-    const tenantId = segments[0];
+    const firstSegment = segments[0];
+    const tenantId = deriveTenantId(firstSegment);
     const source = relPosix;
     syncedTenants.add(tenantId);
 
