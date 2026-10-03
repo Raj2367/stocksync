@@ -14,7 +14,9 @@ StockSync is a microservice application with:
 - Redis
 - Kafka + ZooKeeper
 
-The existing implementation uses JWT auth at the gateway, MongoDB for orders, PostgreSQL/Redis for inventory, Kafka for the asynchronous Saga flow, and an in-memory Saga store.
+The existing implementation uses JWT auth at the gateway, MongoDB for orders
+and Saga state, PostgreSQL/Redis for inventory, and Kafka for the asynchronous
+Saga flow.
 
 ## 2. Target architecture
 
@@ -24,21 +26,23 @@ The target adds only the minimum new responsibilities required for the demo:
 - tenant-aware orders
 - persisted tenant-aware Sagas
 - demo-controlled payment behavior
-- minimal frontend
+- a Next.js frontend (Vercel-hosted, direct to API Gateway)
 - an Order Operations Copilot
 
 The Copilot is a hybrid RAG feature and lives as a module within the API Gateway service boundary. It does **not** use embeddings to answer exact transactional questions.
 
-### Request path
+### 2.1 Request path
 
 ```text
 Browser
   | HTTPS
   v
-Public TLS Edge / Reverse Proxy
-  | private network
+Vercel-hosted Next.js frontend
+  |
   v
-API Gateway
+Render public API Gateway endpoint
+  | HTTPS (TLS terminated by Render platform edge)
+  | private network
   |-- JWT authentication
   |-- tenant derivation
   |-- trusted X-Tenant-Id propagation
@@ -60,8 +64,10 @@ API Gateway
          +----------> LLM API
          |
          v
-      grounded answer
+       grounded answer
 ```
+
+The browser calls the API Gateway directly over HTTPS rather than routing requests server-side through a Next.js proxy layer. TLS is terminated by Render's platform edge, which serves as the public ingress.
 
 ### Async transaction path
 
@@ -97,7 +103,7 @@ The event bus is bidirectional: Order, Inventory, Payment, and Saga can publish/
 ## 3. Trust boundaries
 
 1. The browser is untrusted.
-2. The public TLS edge is the public ingress; the gateway is the application authentication boundary behind it.
+2. Render's public edge is the public ingress; the API Gateway is the application authentication boundary.
 3. Internal services trust the gateway-provided tenant context only when they are private to the deployment network.
 4. Transactional services remain the source of truth for order/Saga state.
 5. RAG retrieval cannot override authorization.
@@ -158,6 +164,6 @@ Answer
 
 The first release should avoid introducing a standalone agent platform or RAG microservice unless deployment or isolation requires it. The preferred implementation is a small Copilot/RAG module within an existing Node.js service boundary, backed by existing infrastructure.
 
-The Copilot request shape is `POST /copilot/ask { question, orderId? }`. The UI passes an explicit `orderId` rather than relying on LLM extraction. The exact vector-store wiring remains a Phase 2 decision under ADR-011.
+The Copilot request shape is `POST /copilot/ask { question, orderId? }`. The UI passes an explicit `orderId` rather than relying on LLM extraction. The vector store uses the existing MongoDB deployment with Node-side cosine similarity ranking, as recorded in ADR-011.
 
-The public deployment uses a TLS edge in front of the private gateway as defined by ADR-012.
+The deployed API Gateway is publicly reachable through Render, with TLS terminated by Render's platform edge. The API Gateway is the public application entry point; internal backend services remain private to the deployment network. The browser-hosted Next.js frontend is deployed to Vercel and communicates directly with the API Gateway over HTTPS; the frontend does not proxy requests server-side.
