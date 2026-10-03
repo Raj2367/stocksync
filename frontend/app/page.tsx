@@ -6,22 +6,12 @@ import { ApiError } from "@/lib/api/client";
 import { getCurrentToken, logout } from "@/lib/api/auth";
 import { listOrders, Order } from "@/lib/api/orders";
 import { Button } from "@/components/ui/button";
+import { statusClass } from "@/lib/status";
+import Link from "next/link";
 
 interface OrdersResponse {
   count: number;
   orders: Order[];
-}
-
-function statusClass(status: string): string {
-  switch (status) {
-    case "CONFIRMED":
-    case "COMPLETED":
-      return "bg-green-100 text-green-800";
-    case "CANCELLED":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-yellow-100 text-yellow-800";
-  }
 }
 
 export default function HomePage() {
@@ -156,8 +146,13 @@ export default function HomePage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {data.orders.map((order: Order) => (
               <tr key={order.orderId}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {order.orderId}
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <Link
+                    href={`/orders/${order.orderId}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {order.orderId}
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {order.productId}
