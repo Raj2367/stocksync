@@ -99,6 +99,35 @@ describe("DEMO_MODE payment determinism (Phase 0D)", () => {
     expect(processedMock.mock.calls[0][0].tenantId).toBe("tenant-acme");
   });
 
+  it("approves SUCCESS orders in DEMO_MODE even when random would decline", async () => {
+    const { handlePayment, processedMock, failedMock } = setup({
+      demoMode: "true",
+      randomValue: 0.99, // random mode: 0.99 >= 0.7 would DECLINE
+      paymentMode: "SUCCESS",
+    });
+
+    await handlePayment(baseEvent({ paymentMode: "SUCCESS" }));
+
+    expect(processedMock).toHaveBeenCalledTimes(1);
+    expect(failedMock).not.toHaveBeenCalled();
+    expect(processedMock.mock.calls[0][0].paymentMode).toBe("SUCCESS");
+  });
+
+  it("declines FAIL orders in DEMO_MODE even when random would approve", async () => {
+    const { handlePayment, processedMock, failedMock } = setup({
+      demoMode: "true",
+      randomValue: 0.0, // random mode: 0.0 < 0.7 would APPROVE
+      paymentMode: "FAIL",
+    });
+
+    await handlePayment(baseEvent({ paymentMode: "FAIL" }));
+
+    expect(failedMock).toHaveBeenCalledTimes(1);
+    expect(processedMock).not.toHaveBeenCalled();
+    expect(failedMock.mock.calls[0][0].paymentMode).toBe("FAIL");
+    expect(failedMock.mock.calls[0][0].reason).toBeDefined();
+  });
+
   it("declines non-PREPAID (UNPAID) orders in DEMO_MODE even when random would approve", async () => {
     const { handlePayment, processedMock, failedMock } = setup({
       demoMode: "true",

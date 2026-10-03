@@ -74,11 +74,12 @@ export async function handlePayment(event: InventoryReservedEvent): Promise<void
   await sleep(delay);
 
   // DEMO_MODE uses a deterministic decision based on paymentMode:
-  // PREPAID orders are always approved (funds already collected), any other
-  // mode (e.g. UNPAID) is declined (no funds captured). Outside DEMO_MODE
-  // the original randomized ~70% success rate is preserved exactly.
+  // SUCCESS and PREPAID orders are always approved (funds already collected
+  // or explicitly confirmed), FAIL orders are declined (forced demo failure),
+  // and any other mode (e.g. UNPAID) is also declined (no funds captured).
+  // Outside DEMO_MODE the original randomized ~70% success rate is preserved exactly.
   const isApproved = DEMO_MODE
-    ? event.paymentMode === "PREPAID"
+    ? event.paymentMode === "PREPAID" || event.paymentMode === "SUCCESS"
     : Math.random() < 0.7;
 
   if (isApproved) {
