@@ -8,7 +8,7 @@
 
 Extend the existing StockSync backend into a small, publicly demonstrable application with:
 
-1. a minimal frontend,
+1. a browser-accessible frontend (Next.js, deployed to Vercel, communicating directly with the API Gateway),
 2. credible tenant-scoped authentication and order isolation,
 3. persistent Saga history,
 4. deterministic demo behavior, and
@@ -208,7 +208,7 @@ Copilot requests must be protected by a stricter per-tenant Redis rate limit to 
 
 ## 10. Deployment requirements
 
-- Public frontend and public HTTPS API endpoint.
+- Public frontend (Vercel) and public HTTPS API endpoint (Render).
 - A small public TLS edge/reverse proxy is the only internet-facing backend component.
 - The API Gateway and all internal services/data stores are private to the deployment network.
 - Secrets are supplied through deployment environment variables.

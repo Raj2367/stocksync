@@ -1,6 +1,9 @@
 # StockSync — Current Repository Baseline
 
-**Verified:** 2026-09-28 against the public `main` branch.
+**Verified:** 2026-10-03 for the frontend/deployment portions. Non-frontend items retain their 2026-09-28 verification status.
+
+> Re-verified on 2026-10-03 to incorporate the completed frontend deployment phase (Phase 1).
+> The frontend application is now present under `frontend/` and deployed to Vercel.
 
 The current repo baseline includes:
 
@@ -12,6 +15,16 @@ The current repo baseline includes:
 - Payment processing is currently randomized at roughly 70% approval.
 - `docker-compose.yml` currently contains hardcoded development secrets/credentials such as `JWT_SECRET` and the Postgres password; moving these to environment variables is approved Phase 0 work.
 - The repo must preserve only `.env.example` templates in source control; actual `.env` files and deployment secrets are not part of the baseline deliverable.
+
+### Frontend (added 2026-10-03)
+
+- A separate Next.js App Router + TypeScript frontend is implemented under `frontend/`.
+- The frontend communicates directly with the existing public API Gateway (no BFF).
+- JWT login through `POST /auth/login`; tenant context derived from the verified backend JWT.
+- Authenticated Orders list at `/`, Order Detail at `/orders/[orderId]`, and a single-shot Copilot page at `/copilot`.
+- Frontend is deployed to Vercel at https://stocksync-nine.vercel.app.
+- Backend API Gateway is the existing public Render deployment at https://stocksync-a8qw.onrender.com.
+- 401/403 session invalidation is handled client-side by redirecting to `/login`.
 
 This file is intentionally a baseline, not a desired-state document. Desired behavior is defined by `docs/REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, and `DECISIONS.md`.
 

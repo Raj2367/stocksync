@@ -99,7 +99,7 @@ See [`docs/ADR-012-PUBLIC-TLS-EDGE.md`](docs/ADR-012-PUBLIC-TLS-EDGE.md).
 
 **Status:** Accepted; canonical decision record is [`docs/ADR-013-FRONTEND-ARCHITECTURE.md`](docs/ADR-013-FRONTEND-ARCHITECTURE.md).
 
-A separate Next.js + TypeScript + Tailwind CSS + shadcn/ui frontend will communicate directly with the existing API Gateway (no BFF), authenticate via the existing JWT login API, and derive tenant context exclusively from the JWT. The Copilot is a first-class workflow supporting Login → Orders → Order detail → Ask Copilot.
+A separate Next.js + TypeScript + Tailwind CSS + shadcn/ui frontend is implemented and deployed to Vercel, communicating directly with the existing API Gateway (no BFF), authenticating via the existing JWT login API, and deriving tenant context exclusively from the JWT. The Copilot is a first-class workflow supporting Login → Orders → Order detail → Ask Copilot → grounded answer with live-fact indicators and source attribution.
 
 ## Decision precedence rule
 

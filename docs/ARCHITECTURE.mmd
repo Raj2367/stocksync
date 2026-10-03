@@ -1,6 +1,6 @@
 flowchart LR
-    B[Browser / Minimal Frontend] --> E[Public TLS Edge / Reverse Proxy]
-    E --> G[API Gateway\nJWT Auth + Tenant Context]
+    B[Browser] --> F[Vercel Next.js Frontend]
+    F --> G[API Gateway\nJWT Auth + Tenant Context]
 
     O[Order Service\nTenant-scoped Orders]
     S[Saga Orchestrator\nPersistent Tenant-scoped Sagas]
@@ -45,7 +45,7 @@ flowchart LR
     classDef data fill:#ffe,stroke:#884;
     classDef ai fill:#fce,stroke:#848;
 
-    class B,E public;
-    class G,O,S,I,P core;
+    class B,F,G public;
+    class O,S,I,P core;
     class M,PG,R,K data;
     class C,L,V ai;
