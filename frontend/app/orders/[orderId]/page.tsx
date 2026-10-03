@@ -16,12 +16,15 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [coldStart, setColdStart] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDetail = useCallback(() => {
+  const fetchDetail = useCallback((showInitialLoading: boolean = true) => {
     if (!orderId) {
       return;
     }
-    setLoading(true);
+    if (showInitialLoading) {
+      setLoading(true);
+    }
     setError(null);
     setColdStart(false);
 
@@ -45,7 +48,10 @@ export default function OrderDetailPage() {
           setError("Failed to load order. Please try again.");
         }
       } finally {
-        setLoading(false);
+        if (showInitialLoading) {
+          setLoading(false);
+        }
+        setRefreshing(false);
       }
     })();
   }, [orderId, router]);
@@ -56,7 +62,7 @@ export default function OrderDetailPage() {
       router.replace("/login");
       return;
     }
-    void fetchDetail(); // eslint-disable-line react-hooks/set-state-in-effect
+    void fetchDetail(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, [fetchDetail, router]);
 
   useEffect(() => {
@@ -74,6 +80,11 @@ export default function OrderDetailPage() {
 
   const handleCopilotClick = () => {
     router.push(`/copilot?orderId=${orderId}`);
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    void fetchDetail(false);
   };
 
   if (loading) {
@@ -116,7 +127,7 @@ export default function OrderDetailPage() {
           </Button>
         </div>
         <p className="text-red-600">{error}</p>
-        <Button onClick={fetchDetail} variant="outline" className="mt-4">
+        <Button onClick={() => fetchDetail(true)} variant="outline" className="mt-4">
           Retry
         </Button>
       </main>
@@ -139,6 +150,17 @@ export default function OrderDetailPage() {
       </div>
 
       <h1 className="mb-4 text-2xl font-bold">{order.orderId}</h1>
+
+      <div className="mb-6 flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </Button>
+      </div>
 
       <div className="mb-6 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
