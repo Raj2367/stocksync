@@ -1,6 +1,11 @@
 # ADR-012 — Public TLS edge
 
-**Status:** Approved for deployment planning; implement during deployment phase.
+**Status:** Intent satisfied by the current deployment; the specific
+project-managed reverse-proxy mechanism below was not implemented.
+
+> **Historical note:** The original ADR below is retained as
+> historical decision context. See "Current implementation /
+> reconciliation" for the deployed approach.
 
 ## Context
 
@@ -31,3 +36,18 @@ API Gateway
 - The gateway remains the application authentication boundary.
 - TLS certificates and provider credentials are deployment secrets or managed by the selected free host.
 - The exact proxy/host is selected during the deployment feasibility spike and verified against the current free-tier constraints.
+
+## Current implementation / reconciliation
+
+The current production deployment does **not** use a project-managed Nginx, Caddy, reverse proxy, or TLS-edge component as part of the StockSync stack.
+
+- The frontend is hosted on Vercel.
+- The public API Gateway is hosted on Render.
+- The internet-facing HTTPS endpoint is provided by the Render platform edge as part of managed hosting.
+- TLS for the public Render endpoint is therefore terminated by the Render platform edge.
+
+This deployment satisfies the HTTPS/TLS intent of this ADR at the platform layer (Browser → Vercel frontend → Render platform edge → HTTPS → Render API Gateway → backend services) rather than through a reverse-proxy component deployed and operated as part of the StockSync stack.
+
+The current deployment differs from the VM-oriented/project-managed mechanism originally proposed by this ADR. The original Decision and Target shape diagram above remain as historical decision context for how this intent was initially scoped.
+
+This ADR remains useful as historical decision context even though the specific mechanism described in it was not implemented.
