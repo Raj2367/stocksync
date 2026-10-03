@@ -139,16 +139,26 @@ This phase implements the StockSync frontend as defined by
 ### Scope
 
 - Separate top-level `frontend/` application.
-- Next.js + TypeScript + Tailwind CSS + shadcn/ui.
-- Direct communication with the existing API Gateway (no BFF).
-- Existing JWT authentication via `POST /auth/login`.
-- Tenant context derived exclusively from the authenticated JWT.
-- Copilot as a first-class workflow (Login → Orders → Order detail → Ask Copilot).
-- Demo-only force-payment-failure control when `DEMO_MODE=true`.
+- Next.js App Router + TypeScript.
+- Tailwind CSS + shadcn/ui.
+- Direct browser-to-existing API Gateway communication (no BFF).
+- JWT login through `POST /auth/login`.
+- Tenant context derived exclusively from the authenticated backend JWT/session flow.
+- Authenticated Orders list.
+- Order Detail page with order status/saga status details and handoff to the Order Operations Copilot via optional `orderId` context.
+- Single-shot Order Operations Copilot page with optional `orderId` context.
+- Live order/saga fact indicators and source attribution on Copilot answers.
+- Demo-only force-payment-failure control when `DEMO_MODE=true` — deferred; not implemented in the current frontend phase.
+- 401/403 session invalidation handling.
+- Production deployment to Vercel.
 
 ### Exit gate
 
-A new browser session can complete the ADR-013 demo journey: Login → Orders list → Order detail → Ask Copilot → grounded answer with live-fact indicators and source attribution.
+**Implemented.** A new browser session can complete the ADR-013 demo journey:
+
+Login → Orders list → Order detail → Ask Copilot → grounded answer with live-fact indicators and source attribution
+
+The frontend is deployed at https://stocksync-nine.vercel.app, communicating directly with the existing public API Gateway at https://stocksync-a8qw.onrender.com.
 
 ---
 

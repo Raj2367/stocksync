@@ -2,6 +2,22 @@
 
 A microservices-based inventory and order management system demonstrating event-driven architecture, the Saga pattern, and distributed transactions.
 
+## Demo
+
+The project has a deployed browser frontend and backend API:
+
+- **Frontend:** https://stocksync-nine.vercel.app
+- **Backend API Gateway:** https://stocksync-a8qw.onrender.com
+
+The frontend communicates directly with the existing API Gateway. The demo journey is:
+
+1. **Login** — sign in with seeded credentials at `/login`.
+2. **Orders** — view your tenant-scoped order list.
+3. **Order Detail** — inspect a specific order.
+4. **Copilot** — ask a single operational question and receive a grounded answer with live-fact indicators and source attribution.
+
+Copilot is a single-shot question/answer experience — not a chat.
+
 ## Architecture
 
 - **API Gateway** — Express.js, JWT auth, rate limiting (Redis)
@@ -9,7 +25,7 @@ A microservices-based inventory and order management system demonstrating event-
 - **Inventory Service** — Node.js + PostgreSQL
 - **Payment Service** — Mock payment processor
 - **Saga Orchestrator** — Distributed transaction coordinator
-- **Dashboard** — Next.js frontend
+- **Frontend** — Next.js App Router, deployed to Vercel at https://stocksync-nine.vercel.app
 
 ## Quick Start
 
