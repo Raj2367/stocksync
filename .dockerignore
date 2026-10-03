@@ -12,3 +12,5 @@
 **/*.log
 **/.vscode/
 **/.idea/
+
+frontend/

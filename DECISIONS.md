@@ -95,6 +95,12 @@ The detailed options, decision rule, and Phase 2 acceptance criteria live in the
 
 See [`docs/ADR-012-PUBLIC-TLS-EDGE.md`](docs/ADR-012-PUBLIC-TLS-EDGE.md).
 
+## ADR-013 — Frontend architecture
+
+**Status:** Accepted; canonical decision record is [`docs/ADR-013-FRONTEND-ARCHITECTURE.md`](docs/ADR-013-FRONTEND-ARCHITECTURE.md).
+
+A separate Next.js + TypeScript + Tailwind CSS + shadcn/ui frontend will communicate directly with the existing API Gateway (no BFF), authenticate via the existing JWT login API, and derive tenant context exclusively from the JWT. The Copilot is a first-class workflow supporting Login → Orders → Order detail → Ask Copilot.
+
 ## Decision precedence rule
 
 An **approved ADR supersedes older requirement text** when the two conflict. After approving an ADR, update `docs/REQUIREMENTS.md` and `docs/ARCHITECTURE.md` to match so the repository returns to a single coherent source of truth. Pending ADRs do not supersede the approved requirements.
