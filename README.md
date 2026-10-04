@@ -13,8 +13,7 @@ grounded in live transactional facts and tenant-scoped operational knowledge.
 | Acme | `admin@acme.stocksync` | `user@acme.stocksync` |
 | Beta | `admin@beta.stocksync` | `user@beta.stocksync` |
 
-Demo passwords are supplied through deployment environment variables. Contact
-the maintainer for access.
+The login page provides one-click access to both seeded demo tenants. No registration is required.
 
 ### 60-second walkthrough
 
