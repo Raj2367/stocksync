@@ -118,6 +118,7 @@ services:
       - SEED_ACME_USER_PASSWORD=${SEED_ACME_USER_PASSWORD}
       - SEED_BETA_ADMIN_PASSWORD=${SEED_BETA_ADMIN_PASSWORD}
       - SEED_BETA_USER_PASSWORD=${SEED_BETA_USER_PASSWORD}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -134,6 +135,7 @@ services:
     volumes:
       - ./services/api-gateway:/app
       - /app/node_modules
+      - ./data:/data:ro
     networks:
       - stocksync-network
     restart: unless-stopped
