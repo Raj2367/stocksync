@@ -13,19 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!email.trim() || !password) {
-      setError("Please enter both your email and password.");
-      return;
-    }
-
+  async function attemptLogin(attemptEmail: string, attemptPassword: string) {
     setError(null);
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(attemptEmail, attemptPassword);
       router.replace("/");
     } catch (err) {
       if (err instanceof ApiError && typeof err.body === "object" && err.body !== null && "error" in err.body && typeof (err.body as { error: unknown }).error === "string") {
@@ -38,8 +31,19 @@ export default function LoginPage() {
     }
   }
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!email.trim() || !password) {
+      setError("Please enter both your email and password.");
+      return;
+    }
+
+    await attemptLogin(email, password);
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-gray-50 p-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-6 rounded-lg bg-white p-8 shadow-md"
@@ -86,6 +90,42 @@ export default function LoginPage() {
           {isLoading ? "Signing in..." : "Sign in"}
         </Button>
       </form>
+
+      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-md">
+        <h2 className="text-center text-lg font-semibold">Demo environment</h2>
+        <p className="text-center text-sm text-gray-600">
+          No registration is required. Explore the application with a seeded
+          tenant.
+        </p>
+        <div className="mt-4 space-y-3">
+          <Button
+            variant="outline"
+            disabled={isLoading}
+            className="w-full"
+            onClick={() =>
+              attemptLogin(
+                "user@acme.stocksync",
+                "RuXRlN8NEAl6yO5hNVMOE1T1PNc79gA6",
+              )
+            }
+          >
+            Tenant Acme
+          </Button>
+          <Button
+            variant="outline"
+            disabled={isLoading}
+            className="w-full"
+            onClick={() =>
+              attemptLogin(
+                "user@beta.stocksync",
+                "D2O3X4wHxLmhNiFeqF3ciYXRkA+k2xMl",
+              )
+            }
+          >
+            Tenant Beta
+          </Button>
+        </div>
+      </div>
     </main>
   );
 }
